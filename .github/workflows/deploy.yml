@@ -1,0 +1,114 @@
+name: Deploy
+
+# Build each pack into a static app and publish it to its Cloudflare Pages
+# project. This workflow owns the triggers and the list of packs; the
+# build/deploy recipe lives in the engine
+# (quizmill/quizmill/.github/workflows/deploy-pack.yml) so every pack app
+# builds and deploys identically.
+#
+# Every top-level directory with a pack.json is a pack (scripts/plan.mjs).
+# A push deploys only the packs it changed; the cron, an engine release and
+# a manual run deploy all of them (or the one named in the manual run).
+# Each app is served at https://<directory>.quizmill.dev; the custom domain
+# is attached to the Pages project in Cloudflare, not set here.
+#
+# Required org (or repo) secrets:
+#   CLOUDFLARE_API_TOKEN    token with "Cloudflare Pages — Edit"
+#   CLOUDFLARE_ACCOUNT_ID   the quizmill Cloudflare account id
+# Optional (enables cloud sync):
+#   NEXT_PUBLIC_SYNC_URL
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '*/pack.json'
+      - '*/questions.json'
+      - '*/concepts.json'
+      - '*/scenarios.json'
+      - 'deploy.json'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+    inputs:
+      pack:
+        description: Pack directory to deploy (empty = all)
+        type: string
+        default: ''
+  # Engine releases fan out a dispatch (event type `engine-update`, sent by
+  # release.yml in quizmill/quizmill; this repo is listed in the engine's
+  # PACK_DISPATCH_REPOS variable) so the apps rebuild on the new engine
+  # without waiting for the daily cron.
+  repository_dispatch:
+    types: [engine-update]
+  schedule:
+    - cron: '17 6 * * *' # 06:17 UTC daily, same as the other pack apps
+
+permissions:
+  contents: read
+
+# Two quick pushes deploy one after the other, never over each other.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      packs: ${{ steps.plan.outputs.packs }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+      - name: Pick the packs to deploy
+        id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          ONLY: ${{ inputs.pack }}
+        run: |
+          if [ "$EVENT" = push ]; then
+            packs="$(node scripts/plan.mjs --since "$BEFORE")"
+          elif [ -n "$ONLY" ]; then
+            packs="$(node scripts/plan.mjs --only "$ONLY")"
+          else
+            packs="$(node scripts/plan.mjs)"
+          fi
+          echo "packs=$packs" >> "$GITHUB_OUTPUT"
+          echo "$packs"
+      # `wrangler pages deploy` does not create the project, so a new pack
+      # directory gets its project here. A no-op once it exists.
+      - name: Ensure the Pages projects exist
+        if: steps.plan.outputs.packs != '[]'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PACKS: ${{ steps.plan.outputs.packs }}
+        run: |
+          for project in $(node -p "JSON.parse(process.env.PACKS).map(p => p.project).join(' ')"); do
+            npx --yes wrangler@4 pages project create "$project" --production-branch=main \
+              || echo "$project already exists (or create skipped), continuing"
+          done
+
+  deploy:
+    needs: plan
+    if: needs.plan.outputs.packs != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        pack: ${{ fromJSON(needs.plan.outputs.packs) }}
+    uses: quizmill/quizmill/.github/workflows/deploy-pack.yml@main
+    with:
+      project: ${{ matrix.pack.project }}
+      # The app dir follows the manifest id (`<id>-app`, see `quizmill build`).
+      app: ${{ matrix.pack.app }}
+      pack: ${{ matrix.pack.dir }}
+      engine: ${{ github.event.client_payload.version || 'latest' }}
+      # Anonymous funnel beacon (six events, random device id, off switch in
+      # Settings) -> the sync worker's analytics route. Public by design.
+      analytics_url: https://sync.quizmill.dev/v1/analytics
+      privacy_url: https://quizmill.dev/privacy
+    secrets: inherit

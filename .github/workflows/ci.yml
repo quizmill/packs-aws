@@ -1,0 +1,55 @@
+name: CI
+
+# Validate every pack on each PR and push to `main`. Deploying is
+# deploy.yml's job.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          # The engine's own major (deploy-pack.yml builds on the same).
+          node-version: 26
+
+      # The samplers' JSON is written by CI from quizmill/packs-aws-full (see
+      # each sampler's .derived.json). A PR that edits it would be overwritten
+      # on the next derive, so stop it here.
+      - name: Generated files are not edited by hand
+        if: github.event_name == 'pull_request'
+        run: |
+          changed="$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")"
+          bad=0
+          for marker in */.derived.json; do
+            [ -f "$marker" ] || continue
+            dir="$(dirname "$marker")"
+            for f in $(node -p "require('./$marker').files.join(' ')") .derived.json; do
+              if printf '%s\n' "$changed" | grep -qx "$dir/$f"; then
+                echo "::error file=$dir/$f::$dir/$f is generated from the full bank; change it in quizmill/packs-aws-full."
+                bad=1
+              fi
+            done
+          done
+          exit $bad
+
+      - name: Validate every pack
+        run: |
+          status=0
+          for dir in $(node scripts/plan.mjs | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).map(p => p.dir).join(' ')"); do
+            echo "::group::$dir"
+            npx --yes quizmill@latest validate "$dir" || status=1
+            echo "::endgroup::"
+          done
+          exit $status

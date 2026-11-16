@@ -70,7 +70,7 @@
       "label": "Original",
       "name": "quizmill exam-style questions",
       "blurb": "Questions written for this pack in the official exam's style, each grounded in the public AWS documentation page named in its sourceRef.",
-      "url": "https://github.com/quizmill/pack-aws-aif"
+      "url": "https://github.com/quizmill/packs-aws/tree/main/aws-aif"
     },
     {
       "label": "AWS",

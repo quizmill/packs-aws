@@ -1,4 +1,4 @@
-# pack-aws-saa — a quizmill learning pack
+# aws-saa — a quizmill learning pack
 
 Practice for the **AWS Certified Solutions Architect – Associate (SAA-C03)**
 exam (65 questions, 130 min, pass 720/1000, scaled). This pack holds

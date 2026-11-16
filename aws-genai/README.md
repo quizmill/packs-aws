@@ -1,4 +1,4 @@
-# pack-aws-genai — a quizmill learning pack
+# aws-genai — a quizmill learning pack
 
 Practice for the **AWS Certified Generative AI Developer – Professional
 (AIP-C01)** exam — AWS's first professional-level GenAI credential

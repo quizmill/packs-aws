@@ -1,4 +1,4 @@
-# pack-aws-aif — authoring rules
+# aws-aif — authoring rules
 
 A quizmill content pack for the AWS Certified AI Practitioner (AIF-C01)
 exam. Public repo: write commit messages, PR bodies and comments in terms

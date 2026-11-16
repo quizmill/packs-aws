@@ -100,7 +100,7 @@
       "label": "Original",
       "name": "quizmill exam-style scenarios",
       "blurb": "Scenario questions written for this pack in the official exam's style, covering the domains the community bank under-serves: testing and validation, operational efficiency, integration patterns, and governance.",
-      "url": "https://github.com/quizmill/pack-aws-genai"
+      "url": "https://github.com/quizmill/packs-aws/tree/main/aws-genai"
     },
     {
       "label": "AWS",
@@ -110,10 +110,10 @@
     }
   ],
   "upgrade": {
-    "title": "Get the full bank — 752 questions",
+    "title": "Get the full bank — 751 questions",
     "url": "https://admin.quizmill.dev/v1/buy/aws-genai-full",
     "price": "$3",
-    "blurb": "This app is a 30-question sample. The full bank has 752 questions in twelve categories, with an Exam-level tier of 385 scenarios, unlocks in place with a licence key under Packs → Have a licence key?, and gets new questions as updates.",
+    "blurb": "This app is a 30-question sample. The full bank has 751 questions in twelve categories, with an Exam-level tier of 385 scenarios, unlocks in place with a licence key under Packs → Have a licence key?, and gets new questions as updates.",
     "packId": "aws-genai-full",
     "unlockUrl": "https://sync.quizmill.dev"
   }

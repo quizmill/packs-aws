@@ -63,7 +63,7 @@
       "label": "Original",
       "name": "quizmill exam-style scenarios",
       "blurb": "Scenario questions written for this pack in the official exam's style, each grounded in the public AWS documentation page named in its sourceRef.",
-      "url": "https://github.com/quizmill/pack-aws-saa"
+      "url": "https://github.com/quizmill/packs-aws/tree/main/aws-saa"
     },
     {
       "label": "AWS",

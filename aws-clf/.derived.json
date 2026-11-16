@@ -1,0 +1,10 @@
+{
+  "note": "Generated from the private full bank. Do not edit the listed files here; changes are overwritten.",
+  "source": "quizmill/packs-aws-full/aws-clf-full",
+  "files": [
+    "pack.json",
+    "questions.json",
+    "concepts.json",
+    "scenarios.json"
+  ]
+}

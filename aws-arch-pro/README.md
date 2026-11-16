@@ -18,8 +18,8 @@ npx quizmill run .
 Or from the Quizmill engine repo:
 
 ```sh
-npm run pack:validate /path/to/pack-aws-arch-pro
-npm run pack:use /path/to/pack-aws-arch-pro
+npm run pack:validate /path/to/packs-aws/aws-arch-pro
+npm run pack:use /path/to/packs-aws/aws-arch-pro
 npm run build
 ```
 

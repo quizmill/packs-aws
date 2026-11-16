@@ -1,4 +1,4 @@
-# pack-aws-clf — a quizmill learning pack
+# aws-clf — a quizmill learning pack
 
 Practice for the **AWS Certified Cloud Practitioner (CLF-C02)** exam
 (65 questions, 90 min, pass 700/1000, scaled). This pack is a
@@ -52,13 +52,15 @@ The sample is drawn in proportion to them:
 - **Both answer formats.** Four of the 30 are "Select TWO".
 - **One concept per question**: no two of the 30 share a key.
 
-The sample is frozen: a fix to one of these 30 lands in both repos, but new
-questions go to the full bank only.
+The sample is generated from the full bank: `pack.json`, `questions.json`,
+`concepts.json` and `scenarios.json` here are written by CI and never edited
+by hand (see `.derived.json`). A fix to one of these 30 is made in the full
+bank and arrives here on merge; new questions go to the full bank only.
 
 ## Use it
 
 ```
-npx quizmill run quizmill/pack-aws-clf   # straight from GitHub
+npx quizmill run ./aws-clf   # from a checkout of quizmill/packs-aws
 npx quizmill run .        # http://localhost:3000
 npx quizmill validate .   # schema + cross-reference checks
 ```

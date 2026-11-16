@@ -1,4 +1,4 @@
-# pack-aws-saa — authoring rules
+# aws-saa — authoring rules
 
 A quizmill content pack for the AWS Certified Solutions Architect – Associate
 (SAA-C03) exam. Public repo: write commit messages, PR bodies and comments

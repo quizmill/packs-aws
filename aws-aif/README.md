@@ -1,4 +1,4 @@
-# pack-aws-aif — a quizmill learning pack
+# aws-aif — a quizmill learning pack
 
 Practice for the **AWS Certified AI Practitioner (AIF-C01)** exam
 (65 questions, 90 min, pass 700/1000, scaled): AI and ML fundamentals,
@@ -60,7 +60,7 @@ the pack library (it is listed in the quizmill pack registry as
 `aws-aif`). From the command line:
 
 ```
-npx quizmill run quizmill/pack-aws-aif   # straight from GitHub
+npx quizmill run ./aws-aif   # from a checkout of quizmill/packs-aws
 npx quizmill run .        # http://localhost:3000
 npx quizmill validate .   # schema + cross-reference checks
 ```

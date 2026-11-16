@@ -1,0 +1,5 @@
+{
+  "$comment": "Only packs whose Cloudflare Pages project is not named after their directory need an entry. Every directory with a pack.json is deployed.",
+  "aws-genai": { "project": "aws-genai-cert" },
+  "aws-arch-pro": { "project": "pack-aws-arch-pro" }
+}
