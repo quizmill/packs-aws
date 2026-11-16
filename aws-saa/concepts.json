@@ -1,0 +1,617 @@
+[
+  {
+    "id": "iam-roles-and-sts",
+    "title": "IAM roles and temporary credentials (AWS STS)",
+    "body": "An IAM role is an identity with permissions but no long-term credentials. A principal that the role's trust policy names calls sts:AssumeRole and receives temporary credentials that expire on their own.\n\n- EC2 instances get a role through an instance profile; the SDK picks up rotating credentials from instance metadata.\n- Cross-account access: a role in the resource account trusts the other account, and that account grants sts:AssumeRole to the users or roles that may switch into it.\n- A third party that serves many customers should be required to pass an external ID (sts:ExternalId) to close the confused deputy gap.\n\nRead more: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html",
+    "commonMistakes": [
+      "Storing an IAM user's access keys in a secret or parameter: they are still long-term credentials.",
+      "Thinking a role has a member list like a group; users reach a role by assuming it.",
+      "Trusting a vendor's account without an external ID when the vendor acts for many customers."
+    ],
+    "tags": ["domain-1", "task-1.1"]
+  },
+  {
+    "id": "iam-policy-evaluation",
+    "title": "How AWS evaluates IAM policies",
+    "body": "AWS gathers every policy that applies to a request and decides in this order:\n\n1. An explicit Deny in any policy ends the evaluation with a deny.\n2. SCPs, RCPs, permissions boundaries and session policies act as filters: if any of them does not allow the action, the result is an implicit deny.\n3. An Allow in an identity-based or resource-based policy grants the action.\n4. Anything not allowed is implicitly denied.\n\nCross-account requests are evaluated in both accounts and must be allowed by both: the caller's identity policy (and its SCPs) and the resource policy.\n\nAttribute-based access control (ABAC) compares tags, for example aws:ResourceTag/project with ${aws:PrincipalTag/project}, so one policy scales as projects are added.\n\nRead more: https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html",
+    "commonMistakes": [
+      "Assuming policy order or the breadth of an Allow can beat an explicit Deny.",
+      "Expecting a permissions boundary or SCP to grant permissions; they only limit them.",
+      "Forgetting that the caller's SCPs still apply when a resource policy allows a cross-account call."
+    ],
+    "tags": ["domain-1", "task-1.1"]
+  },
+  {
+    "id": "organizations-scps",
+    "title": "Service control policies in AWS Organizations",
+    "body": "A service control policy (SCP) sets the maximum permissions for IAM users and roles in the member accounts it is attached to, through the root, an OU or an account. Account administrators cannot detach it.\n\n- SCPs grant nothing; identity policies still have to allow the action.\n- SCPs do not affect the management account, nor service-linked roles.\n- Typical guardrails: deny leaving the organization, deny disabling CloudTrail or GuardDuty, deny requests outside approved Regions with aws:RequestedRegion while exempting global services through NotAction.\n\nAWS Control Tower builds a landing zone on Organizations with ready-made preventive (SCP) and detective (AWS Config) controls and an Account Factory.\n\nRead more: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html",
+    "commonMistakes": [
+      "Expecting an SCP to restrict the management account.",
+      "Writing a Region-deny SCP without exempting IAM, CloudFront, Route 53 and other global services."
+    ],
+    "tags": ["domain-1", "task-1.1"]
+  },
+  {
+    "id": "iam-identity-center",
+    "title": "IAM Identity Center for workforce access",
+    "body": "IAM Identity Center gives the workforce one sign-in to many AWS accounts and applications. Its identity source can be the built-in directory, Active Directory, or an external SAML 2.0 identity provider with SCIM provisioning.\n\nAccess is defined once as permission sets and assigned to users or groups for chosen accounts; Identity Center creates the matching roles in each account, and users get temporary credentials.\n\nUse it for employees. For customers of an application, use Amazon Cognito.\n\nRead more: https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html",
+    "commonMistakes": [
+      "Creating IAM users in each account for people who already exist in the corporate directory.",
+      "Using Identity Center for an application's end customers."
+    ],
+    "tags": ["domain-1", "task-1.1"]
+  },
+  {
+    "id": "amazon-cognito",
+    "title": "Amazon Cognito user pools and identity pools",
+    "body": "Cognito has two parts that are easy to mix up:\n\n- A user pool is a user directory and sign-in service for an application's customers. It can federate social and SAML identity providers and issues JWTs. An Application Load Balancer can authenticate users against a user pool itself (authenticate-cognito action, HTTPS listeners only).\n- An identity pool exchanges a sign-in token for temporary AWS credentials of an IAM role, so a mobile or web app can call AWS services such as S3 directly. The policy variable ${cognito-identity.amazonaws.com:sub} scopes each user to their own prefix.\n\nRead more: https://docs.aws.amazon.com/cognito/latest/developerguide/what-is-amazon-cognito.html",
+    "commonMistakes": [
+      "Sending a user pool token straight to S3; it must first be exchanged for AWS credentials through an identity pool.",
+      "Putting an authenticate action on an HTTP listener."
+    ],
+    "tags": ["domain-1", "task-1.1", "task-1.2"]
+  },
+  {
+    "id": "security-groups-and-nacls",
+    "title": "Security groups and network ACLs",
+    "body": "- Security groups apply to network interfaces (instances, load balancers). They are stateful, so replies are allowed automatically. They have allow rules only, and a rule's source can be a CIDR, a prefix list or another security group.\n- Network ACLs apply to subnets. They are stateless, so return traffic needs its own rule. They have allow and deny rules, evaluated from the lowest number up, and match CIDRs only.\n\nUse security group references (for example, the ALB's security group as the source) to admit traffic from a tier whose IPs change. Use a network ACL deny, numbered below the matching allow, to block a specific range. Remember ephemeral ports (1024-65535) for return traffic through a custom network ACL.\n\nRead more: https://docs.aws.amazon.com/vpc/latest/userguide/infrastructure-security.html",
+    "commonMistakes": [
+      "Trying to add a deny rule to a security group.",
+      "Numbering a network ACL deny after the allow it should override.",
+      "Forgetting outbound or inbound ephemeral ports on a custom network ACL."
+    ],
+    "tags": ["domain-1", "task-1.2"]
+  },
+  {
+    "id": "vpc-endpoints",
+    "title": "VPC endpoints and AWS PrivateLink",
+    "body": "VPC endpoints let resources in private subnets reach services without an internet gateway or NAT.\n\n- Gateway endpoints exist for Amazon S3 and DynamoDB only. They are route table targets and have no hourly charge.\n- Interface endpoints (AWS PrivateLink) place network interfaces in your subnets for most other AWS services. With private DNS enabled, the service's default hostname resolves to those private IPs, so code doesn't change.\n- Endpoint services: a provider fronts its own service with a Network Load Balancer and publishes it; consumers create interface endpoints. Traffic flows one way, only that service is exposed, and overlapping CIDRs don't matter.\n\nEndpoint policies and conditions such as aws:SourceVpce in a bucket policy restrict what goes through the endpoint.\n\nRead more: https://docs.aws.amazon.com/vpc/latest/privatelink/concepts.html",
+    "commonMistakes": [
+      "Looking for a gateway endpoint for a service other than S3 or DynamoDB.",
+      "Creating an interface endpoint with private DNS turned off and expecting default SDK endpoints to use it.",
+      "Using VPC peering where CIDRs overlap."
+    ],
+    "tags": ["domain-1", "task-1.2", "domain-3", "task-3.4", "domain-4", "task-4.4"]
+  },
+  {
+    "id": "waf-and-shield",
+    "title": "AWS WAF, AWS Shield and Firewall Manager",
+    "body": "- AWS WAF filters HTTP(S) requests at CloudFront, Application Load Balancers, API Gateway, AppSync and a few other resources. Web ACLs hold managed rule groups (SQL injection, known bad inputs), rate-based rules, IP sets and geographic match rules. It does not attach to EC2 instances or NAT gateways.\n- AWS Shield Standard protects every customer against common network and transport layer DDoS attacks at no extra charge.\n- AWS Shield Advanced adds, for the resources you protect, the Shield Response Team and cost protection for scaling caused by an attack.\n- AWS Firewall Manager applies WAF, Shield Advanced, security group and Network Firewall policies across an organization, including accounts and resources added later.\n\nRead more: https://docs.aws.amazon.com/waf/latest/developerguide/what-is-aws-waf.html",
+    "commonMistakes": [
+      "Associating a web ACL with an EC2 instance.",
+      "Expecting DDoS experts or cost credits from Shield Standard."
+    ],
+    "tags": ["domain-1", "task-1.2"]
+  },
+  {
+    "id": "network-firewalls",
+    "title": "Inspecting VPC traffic: Network Firewall, DNS Firewall, Gateway Load Balancer",
+    "body": "- AWS Network Firewall is a managed, stateful firewall. Its stateful rule groups can allow or deny by domain using TLS SNI or the HTTP Host header. It only sees traffic that route tables send through its firewall endpoints, on the way out and on the way back.\n- Route 53 Resolver DNS Firewall filters DNS queries sent to the Route 53 Resolver. A workload that uses another resolver or a hard-coded IP bypasses it.\n- Gateway Load Balancer runs third-party virtual appliances transparently. It distributes flows over GENEVE, health checks the appliances, and its endpoints are route table targets, so packets keep their original addresses.\n\nRead more: https://docs.aws.amazon.com/network-firewall/latest/developerguide/what-is-aws-network-firewall.html",
+    "commonMistakes": [
+      "Relying on DNS filtering alone against a compromised workload.",
+      "Pointing a route at a Network Load Balancer; it is not a valid route target."
+    ],
+    "tags": ["domain-1", "task-1.2"]
+  },
+  {
+    "id": "secrets-management",
+    "title": "Secrets Manager and Parameter Store",
+    "body": "Both store values encrypted with AWS KMS and control access with IAM.\n\n- AWS Secrets Manager is built for credentials. It rotates them on a schedule through managed or Lambda rotation (natively for Amazon RDS, Aurora, Redshift and DocumentDB), replicates secrets across Regions, and charges per secret and per API call.\n- AWS Systems Manager Parameter Store holds configuration and secrets as String, StringList or SecureString parameters in a path hierarchy. Standard parameters (up to 4 KB) have no additional charge; advanced parameters are larger and support policies, for a fee. It has no built-in rotation.\n\nChoose Secrets Manager when rotation is required, and Parameter Store for cheap, hierarchical configuration.\n\nRead more: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html",
+    "commonMistakes": [
+      "Paying for Secrets Manager for plain configuration that never rotates.",
+      "Keeping database passwords in Parameter Store when the requirement is automatic rotation."
+    ],
+    "tags": ["domain-1", "task-1.2", "task-1.3"]
+  },
+  {
+    "id": "threat-detection",
+    "title": "AWS security services: who finds what",
+    "body": "- Amazon GuardDuty detects threats by analyzing CloudTrail, VPC Flow Logs, DNS logs and runtime events, for example an instance talking to a known command-and-control host.\n- Amazon Inspector scans EC2 instances, ECR images and Lambda functions for known software vulnerabilities (CVEs) and rescans when new CVEs are published.\n- Amazon Macie discovers sensitive data such as PII in S3 buckets.\n- AWS Security Hub CSPM aggregates findings from these services across accounts and Regions and runs best-practice checks such as AWS Foundational Security Best Practices.\n- Amazon Detective helps investigate the root cause of a finding.\n- AWS Config records resource configuration and evaluates it against rules.\n\nRead more: https://docs.aws.amazon.com/guardduty/latest/ug/what-is-guardduty.html",
+    "commonMistakes": [
+      "Expecting GuardDuty to report vulnerable packages (that is Inspector).",
+      "Expecting Security Hub to scan for vulnerabilities itself rather than collect findings."
+    ],
+    "tags": ["domain-1", "task-1.2", "task-1.3"]
+  },
+  {
+    "id": "hybrid-connectivity",
+    "title": "Secure connections to a VPC: VPN and Direct Connect",
+    "body": "- AWS Site-to-Site VPN joins a network (with a customer gateway device) to a VPC over IPsec tunnels.\n- AWS Client VPN is a managed, OpenVPN-based service that lets individual users connect to a VPC from their devices.\n- AWS Direct Connect is a private physical link. It is not encrypted by default. To encrypt it, run a Site-to-Site VPN over the link (IPsec), or use MACsec on supported dedicated connections.\n\nRead more: https://docs.aws.amazon.com/directconnect/latest/UserGuide/encryption-in-transit.html",
+    "commonMistakes": [
+      "Treating a private Direct Connect circuit as encrypted.",
+      "Using Site-to-Site VPN for individual remote workers' laptops."
+    ],
+    "tags": ["domain-1", "task-1.2", "domain-4", "task-4.4"]
+  },
+  {
+    "id": "aws-kms",
+    "title": "AWS KMS keys, key policies and rotation",
+    "body": "AWS KMS keys never leave KMS unencrypted; services use envelope encryption with data keys generated under a KMS key.\n\n- Customer managed keys give you the key policy, rotation and grants. AWS managed keys (aws/s3, aws/ebs) are rotated by AWS, but you cannot edit their policies or share them across accounts.\n- Every key has exactly one key policy. Cross-account use needs the key policy to allow the other account AND an IAM policy in that account to delegate to its roles.\n- Automatic rotation creates new key material on a schedule while the key ID stays the same; older material still decrypts older data.\n- Multi-Region keys share key ID and material across Regions, so data encrypted in one Region can be decrypted in another without a cross-Region call. The property is set when the key is created.\n- AWS CloudHSM gives single-tenant HSMs that you manage, for requirements that KMS's shared HSMs can't meet.\n\nRead more: https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html",
+    "commonMistakes": [
+      "Granting another account in an IAM policy but not in the key policy (or the reverse).",
+      "Trying to share an encrypted resource that uses an AWS managed key across accounts.",
+      "Expecting to convert an existing single-Region key to multi-Region."
+    ],
+    "tags": ["domain-1", "task-1.3"]
+  },
+  {
+    "id": "s3-access-control",
+    "title": "Controlling access to Amazon S3",
+    "body": "- Bucket policies grant or deny access by principal and condition: aws:SecureTransport to require HTTPS, aws:SourceVpce to require a VPC endpoint, aws:PrincipalOrgID to admit a whole organization.\n- S3 Block Public Access overrides public grants at the bucket, account or organization level.\n- S3 Object Ownership set to bucket owner enforced disables ACLs, so the bucket owner owns every object and policies alone decide access. It is the default for new buckets.\n- Presigned URLs give time-limited access to a single object without an AWS identity.\n- CloudFront origin access control (OAC) keeps a bucket private behind a distribution.\n- Encryption at rest: SSE-S3 (default), SSE-KMS with a customer managed key for control and audit, and S3 Bucket Keys to cut KMS request volume.\n\nRead more: https://docs.aws.amazon.com/AmazonS3/latest/userguide/security-best-practices.html",
+    "commonMistakes": [
+      "Using object ACLs or public-read to share a file for a limited time.",
+      "Listing member account IDs in a bucket policy instead of using aws:PrincipalOrgID."
+    ],
+    "tags": ["domain-1", "task-1.1", "task-1.3"]
+  },
+  {
+    "id": "s3-data-protection",
+    "title": "Protecting S3 data from deletion and change",
+    "body": "- S3 Versioning keeps every version of an object; overwrites create a new version and deletes add a delete marker, so mistakes can be undone.\n- S3 Object Lock adds write-once-read-many retention to versions. Governance mode can be bypassed by users with special permission; compliance mode cannot be shortened or removed by anyone, including the root user, until retention ends. Legal holds have no expiry.\n- Replication (same-Region or cross-Region) keeps a copy in another bucket, which can be in another account.\n\nRead more: https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html",
+    "commonMistakes": [
+      "Choosing governance mode when even administrators must not delete data.",
+      "Turning on Object Lock to undo accidental overwrites when users still need to delete files."
+    ],
+    "tags": ["domain-1", "task-1.3"]
+  },
+  {
+    "id": "aws-backup",
+    "title": "AWS Backup",
+    "body": "AWS Backup centralizes backups for services such as Amazon EBS, RDS, Aurora, DynamoDB, EFS, FSx and S3.\n\n- A backup plan sets schedules, retention and copy rules; resources are assigned by tag or ARN.\n- Copy rules send recovery points to vaults in other Regions or other accounts in the organization.\n- AWS Backup Vault Lock in compliance mode becomes immutable after its grace time: nobody, including the root user or AWS, can delete recovery points before retention ends or remove the lock. Governance mode can be removed by principals with the right IAM permissions.\n\nRead more: https://docs.aws.amazon.com/aws-backup/latest/devguide/whatisbackup.html",
+    "commonMistakes": [
+      "Treating a cross-Region copy in the same account as isolated from that account's administrators.",
+      "Relying on a vault access policy that an administrator can edit."
+    ],
+    "tags": ["domain-1", "task-1.3"]
+  },
+  {
+    "id": "acm-and-tls",
+    "title": "Encryption in transit with AWS Certificate Manager",
+    "body": "AWS Certificate Manager (ACM) issues public certificates for integrated services such as Elastic Load Balancing, CloudFront and API Gateway, and renews them automatically when they are DNS validated and in use.\n\n- CloudFront only uses ACM certificates from us-east-1; regional services such as an ALB use a certificate in their own Region.\n- Terminating TLS on a load balancer or CloudFront keeps certificate handling off the instances.\n- For databases, require TLS on the server, for example rds.force_ssl in an RDS for PostgreSQL parameter group.\n- For S3, deny requests where aws:SecureTransport is false.\n\nRead more: https://docs.aws.amazon.com/acm/latest/userguide/acm-overview.html",
+    "commonMistakes": [
+      "Requesting the CloudFront certificate in the origin's Region.",
+      "Relying on each client's TLS settings when the server must refuse plain connections."
+    ],
+    "tags": ["domain-1", "task-1.3"]
+  },
+  {
+    "id": "amazon-sqs",
+    "title": "Amazon SQS queues",
+    "body": "Amazon SQS is a managed message queue that decouples producers from consumers: a message waits durably until a consumer receives and deletes it.\n\n- The visibility timeout hides a received message; set it longer than the processing time, or the message is delivered again.\n- A dead-letter queue with a redrive policy (maxReceiveCount) sets aside messages that keep failing.\n- Standard queues deliver at least once with best-effort order; FIFO queues keep order within a message group and deduplicate.\n- Scale a worker fleet on backlog per instance (visible messages divided by workers), not on CPU.\n\nRead more: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html",
+    "commonMistakes": [
+      "Expecting several applications to each get a copy of a message from one queue; that needs SNS or EventBridge fan-out.",
+      "Leaving the 30-second default visibility timeout on jobs that run for minutes.",
+      "Expecting a FIFO queue to move a poison message aside; it blocks the rest of its message group instead."
+    ],
+    "tags": ["domain-2", "task-2.1", "domain-3", "task-3.2"]
+  },
+  {
+    "id": "messaging-patterns",
+    "title": "Choosing SQS, SNS, EventBridge or Kinesis",
+    "body": "- Amazon SQS: a queue; each message is processed by one consumer and then deleted.\n- Amazon SNS: publish/subscribe fan-out; every subscription gets a copy, and a filter policy limits which messages it gets. SNS FIFO topics fan out in order to SQS FIFO queues.\n- Amazon EventBridge: an event bus whose rules match event patterns on any field and route matches to targets; it also receives AWS service and SaaS events.\n- Amazon Kinesis Data Streams: an ordered, replayable log; records with the same partition key keep their order, and each consumer reads at its own position for the retention period.\n\nRead more: https://docs.aws.amazon.com/decision-guides/latest/decision-guides/sns-or-sqs-or-eventbridge.html",
+    "commonMistakes": [
+      "Subscribing an SQS FIFO queue to an SNS standard topic; FIFO queues need a FIFO topic.",
+      "Filtering in consumer code when a subscription filter policy or an event pattern can drop messages before delivery.",
+      "Expecting a queue or a standard topic to replay old messages to a new consumer; that needs a stream."
+    ],
+    "tags": ["domain-2", "task-2.1", "domain-3", "task-3.2"]
+  },
+  {
+    "id": "step-functions",
+    "title": "AWS Step Functions workflows",
+    "body": "Step Functions orchestrates steps (Lambda functions, AWS service calls, waits for people) as a state machine with built-in Retry and Catch.\n\n- Standard workflows run up to a year with exactly-once execution and are billed per state transition: long-running, auditable processes.\n- Express workflows run up to five minutes and are billed by executions and duration: high-volume event processing (asynchronous runs are at-least-once).\n- A task token lets a workflow wait for an external callback such as a human approval.\n- Distributed Map runs up to 10,000 parallel child workflows over large datasets such as S3 objects; Inline Map runs at most 40 iterations at a time.\n\nRead more: https://docs.aws.amazon.com/step-functions/latest/dg/choosing-workflow-type.html",
+    "commonMistakes": [
+      "Choosing Standard workflows for thousands of short runs a second, where Express costs far less.",
+      "Writing retry and compensation logic inside each function instead of using Retry and Catch.",
+      "Using an Inline Map for millions of items."
+    ],
+    "tags": ["domain-2", "task-2.1"]
+  },
+  {
+    "id": "elastic-load-balancing",
+    "title": "Elastic Load Balancing: ALB, NLB and Gateway Load Balancer",
+    "body": "- Application Load Balancer: layer 7 (HTTP/HTTPS); listener rules route by path, host, header or query string to target groups.\n- Network Load Balancer: layer 4 (TCP, UDP, TLS); one static IP address per zone and very high throughput. Cross-zone load balancing is off by default, so each node serves only its own zone's targets.\n- Gateway Load Balancer: passes traffic through fleets of inline appliances such as firewalls.\n- Health checks take unhealthy targets out of rotation, and an Auto Scaling group can use them to replace instances.\n\nRead more: https://docs.aws.amazon.com/elasticloadbalancing/latest/userguide/how-elastic-load-balancing-works.html",
+    "commonMistakes": [
+      "Expecting a Network Load Balancer to route by URL path.",
+      "Leaving NLB cross-zone load balancing off when targets are spread unevenly across zones.",
+      "Relying on load balancer health checks while the Auto Scaling group still uses only EC2 status checks."
+    ],
+    "tags": ["domain-2", "task-2.1", "task-2.2", "domain-3", "task-3.4", "domain-4", "task-4.2"]
+  },
+  {
+    "id": "ec2-auto-scaling",
+    "title": "Amazon EC2 Auto Scaling",
+    "body": "- Spread a group over several Availability Zones; it balances instances across them and replaces unhealthy ones.\n- Turn on ELB health checks so that instances the load balancer marks unhealthy are replaced, not only those failing EC2 status checks.\n- Target tracking keeps a metric (CPU, requests per target, queue backlog per instance) near a target value; scheduled actions cover known peaks.\n- Warm pools keep pre-initialized instances stopped and ready, cutting scale-out time for slow-starting applications.\n- Instance refresh replaces instances from a new launch template version in batches, with a minimum healthy percentage and rollback.\n\nRead more: https://docs.aws.amazon.com/autoscaling/ec2/userguide/what-is-amazon-ec2-auto-scaling.html",
+    "commonMistakes": [
+      "Scaling a queue-worker fleet on CPU instead of backlog per instance.",
+      "Patching instances in place instead of shipping a new AMI and running an instance refresh.",
+      "Raising the minimum size to hide slow start-up instead of using a warm pool."
+    ],
+    "tags": ["domain-2", "task-2.1", "task-2.2", "domain-3", "task-3.2", "domain-4", "task-4.2"]
+  },
+  {
+    "id": "rds-availability",
+    "title": "Amazon RDS: Multi-AZ, read replicas and RDS Proxy",
+    "body": "- Multi-AZ DB instance: a synchronous standby in another zone and automatic failover on the same endpoint; the standby serves no reads.\n- Multi-AZ DB cluster: a writer and two readable standbys in three zones, lower write latency, and failover typically under 35 seconds.\n- Read replicas: asynchronous copies with their own endpoints that offload reads, in the same or another Region; promoting one is a manual step.\n- RDS Proxy pools and shares database connections (for example across Lambda executions) and keeps client connections open during a failover.\n\nRead more: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.html",
+    "commonMistakes": [
+      "Sending reports to the standby of a Multi-AZ DB instance deployment.",
+      "Treating a read replica as automatic failover.",
+      "Raising max_connections to absorb Lambda's scale instead of adding RDS Proxy."
+    ],
+    "tags": ["domain-2", "task-2.1", "task-2.2", "domain-3", "task-3.3", "domain-4", "task-4.3"]
+  },
+  {
+    "id": "aurora",
+    "title": "Amazon Aurora availability and endpoints",
+    "body": "- Aurora Replicas share the cluster's storage, which keeps copies across several Availability Zones, and are the failover targets.\n- When the writer fails, Aurora promotes the replica in the highest-priority tier (tier 0 is highest), and the largest replica within a tier.\n- Endpoints: cluster (the writer), reader (load-balances across replicas), instance, and custom endpoints for a chosen set of instances, defined by a static or an exclusion list.\n- An Aurora global database replicates to secondary Regions, typically with under a second of lag, for Region-level recovery.\n\nRead more: https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Concepts.AuroraHighAvailability.html",
+    "commonMistakes": [
+      "Expecting the reader endpoint to keep analytics and application reads on separate replicas.",
+      "Leaving every replica in the same tier when they differ in size or purpose.",
+      "Using cross-Region read replicas when the RPO is seconds and the RTO about a minute."
+    ],
+    "tags": ["domain-2", "task-2.1", "task-2.2", "domain-3", "task-3.3"]
+  },
+  {
+    "id": "data-durability",
+    "title": "Keeping data durable: replication, snapshots and point-in-time recovery",
+    "body": "- Amazon S3 stores objects across several Availability Zones in a Region. Cross-Region Replication (Versioning on both buckets) adds a copy in another Region, and Replication Time Control adds a 15-minute target with metrics and late-object events.\n- EBS volumes live in one zone; snapshots, scheduled with Data Lifecycle Manager or AWS Backup, are how you restore them elsewhere.\n- DynamoDB point-in-time recovery restores a table to any second in its recovery window, and global tables keep active replicas in several Regions.\n\nRead more: https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication.html",
+    "commonMistakes": [
+      "Treating replication as a backup: overwrites and bad writes replicate too.",
+      "Assuming S3 Standard's multi-AZ storage protects against losing a Region.",
+      "Writing snapshot scripts when Data Lifecycle Manager or AWS Backup schedules and expires snapshots."
+    ],
+    "tags": ["domain-2", "task-2.2"]
+  },
+  {
+    "id": "multi-az-design",
+    "title": "Removing single points of failure across Availability Zones",
+    "body": "An Availability Zone is one or more data centers with independent power and networking, and each Region has several. A zonal resource fails with its zone.\n\n- Run every tier in at least two zones: Auto Scaling groups across zones, load balancers enabled in each, Multi-AZ databases.\n- Zonal resources are needed once per zone: a zonal NAT gateway in each zone, with each zone's route table pointing at its own (or a regional NAT gateway).\n- Placement groups: cluster (low latency, shared fate), spread (each instance on distinct hardware, at most seven per zone), partition (groups of racks isolated from each other, with the partition number in instance metadata).\n\nRead more: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html",
+    "commonMistakes": [
+      "Scaling one instance up instead of scaling out across zones.",
+      "Sharing one zonal NAT gateway across every zone's private subnets.",
+      "Using a cluster placement group for nodes that must not fail together."
+    ],
+    "tags": ["domain-2", "task-2.2"]
+  },
+  {
+    "id": "dr-strategies",
+    "title": "Disaster recovery strategies: RPO, RTO and cost",
+    "body": "RPO is how much data loss is acceptable; RTO is how long recovery may take. From cheapest and slowest to costliest and fastest:\n\n- Backup and restore: copy backups to another Region and rebuild after a disaster; RPO and RTO in hours.\n- Pilot light: data replicates continuously and core infrastructure is defined, but the application tier is off until failover; RTO in tens of minutes.\n- Warm standby: a scaled-down working copy takes traffic at once and then scales up; RTO in minutes.\n- Multi-site active/active: full capacity in each Region; near-zero RTO.\n\nRaise service quotas in the DR Region ahead of time. AWS Elastic Disaster Recovery covers servers that can't be changed.\n\nRead more: https://docs.aws.amazon.com/whitepapers/latest/disaster-recovery-workloads-on-aws/disaster-recovery-options-in-the-cloud.html",
+    "commonMistakes": [
+      "Choosing active/active for a workload whose objectives are measured in hours.",
+      "Forgetting that a quiet DR Region keeps its default service quotas.",
+      "Choosing pilot light when the second Region must take traffic the moment failover starts."
+    ],
+    "tags": ["domain-2", "task-2.2"]
+  },
+  {
+    "id": "route53-routing",
+    "title": "Route 53 routing policies and failover",
+    "body": "- Failover: active/passive; the secondary record is returned only when the primary's health check fails.\n- Latency: each user goes to the Region with the lowest latency for them; with health checks, unhealthy Regions are skipped.\n- Weighted: split traffic by ratio, for example for canary releases. Geolocation and geoproximity route by where users are.\n- Alias records to AWS resources can use Evaluate Target Health instead of a separate health check.\n- Application Recovery Controller routing controls are on/off switches read through health checks, for operator-driven failover through the data plane.\n\nRead more: https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html",
+    "commonMistakes": [
+      "Using failover routing when both Regions should serve traffic.",
+      "Using geolocation routing when the requirement is the lowest latency.",
+      "Relying on record edits, a control-plane action, as the failover switch during a regional event."
+    ],
+    "tags": ["domain-2", "task-2.2", "domain-4", "task-4.4"]
+  },
+  {
+    "id": "storage-types",
+    "title": "Object, file and block storage on AWS",
+    "body": "- Object: Amazon S3, reached over HTTP, scales without limits, designed for 11 nines of durability; not a block device.\n- File: Amazon EFS (NFS for Linux, Regional across zones, shared by many instances); FSx for Windows File Server (SMB, NTFS, Active Directory, Multi-AZ option); FSx for Lustre (high-performance Linux).\n- Block: Amazon EBS (one zone, persists independently of the instance; io2 for provisioned IOPS) and instance store (fastest, lost when the instance stops).\n- AWS Transfer Family puts managed SFTP, FTPS and FTP endpoints in front of S3 or EFS.\n\nRead more: https://docs.aws.amazon.com/decision-guides/latest/decision-guides/choosing-aws-storage-service.html",
+    "commonMistakes": [
+      "Sharing an EBS volume across zones; Multi-Attach works only within one zone.",
+      "Choosing EFS for Windows SMB shares.",
+      "Keeping data that must survive a stop on instance store."
+    ],
+    "tags": ["domain-2", "task-2.1"]
+  },
+  {
+    "id": "edge-acceleration",
+    "title": "Amazon CloudFront and AWS Global Accelerator",
+    "body": "- CloudFront caches content at edge locations, offloading the origin and cutting latency for HTTP(S). An origin group retries failed GET, HEAD and OPTIONS requests against a secondary origin.\n- Global Accelerator gives two static anycast IP addresses that carry TCP and UDP traffic over the AWS network to the nearest healthy endpoint (ALB, NLB, EC2 instance or Elastic IP) across Regions; it caches nothing.\n- S3 Transfer Acceleration speeds long-distance uploads and downloads to one bucket, also without caching.\n\nRead more: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Introduction.html",
+    "commonMistakes": [
+      "Expecting Global Accelerator to cache content or to front an S3 bucket.",
+      "Using DNS failover where CloudFront origin failover would retry each request.",
+      "Using Transfer Acceleration to serve popular content to many viewers."
+    ],
+    "tags": ["domain-2", "task-2.1", "task-2.2", "domain-3", "task-3.2", "task-3.4", "domain-4", "task-4.4"]
+  },
+  {
+    "id": "containers",
+    "title": "Containers on AWS: ECS, EKS and Fargate",
+    "body": "- Amazon ECS: AWS's own orchestrator; a service keeps a number of tasks running, registers them with a load balancer and scales with Service Auto Scaling.\n- Amazon EKS: a managed Kubernetes control plane; existing manifests and Helm charts work unchanged.\n- Capacity: EC2 instances that you manage, or AWS Fargate, where AWS provisions and patches the compute (on EKS, Fargate runs no DaemonSets or privileged pods).\n- AWS App2Container analyzes running Java and .NET applications and generates container images and deployment artifacts.\n\nRead more: https://docs.aws.amazon.com/decision-guides/latest/decision-guides/choosing-aws-container-service.html",
+    "commonMistakes": [
+      "Choosing the EC2 launch type when nobody can manage servers.",
+      "Moving Kubernetes workloads to ECS and rewriting every manifest.",
+      "Using AWS Batch for a long-running service behind a load balancer."
+    ],
+    "tags": ["domain-2", "task-2.1", "domain-3", "task-3.2", "domain-4", "task-4.2"]
+  },
+  {
+    "id": "serverless-lambda",
+    "title": "AWS Lambda scaling and failure handling",
+    "body": "- Lambda scales by running more concurrent executions; reserved concurrency caps and guarantees a function's share, and provisioned concurrency keeps environments initialized.\n- Asynchronous invocations (such as from S3 or SNS) are retried twice; an on-failure destination or a dead-letter queue keeps the events that still fail.\n- SQS event source mappings: report partial batch failures with ReportBatchItemFailures, and limit pollers with maximum concurrency rather than reserved concurrency alone.\n- Put RDS Proxy in front of a relational database that many executions connect to.\n\nRead more: https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html",
+    "commonMistakes": [
+      "Failing a whole SQS batch when one message fails.",
+      "Throttling an SQS-triggered function with reserved concurrency alone, which pushes throttled messages toward the dead-letter queue.",
+      "Treating provisioned concurrency as a cap."
+    ],
+    "tags": ["domain-2", "task-2.1", "task-2.2", "domain-3", "task-3.2"]
+  },
+  {
+    "id": "api-gateway",
+    "title": "Amazon API Gateway throttling and caching",
+    "body": "- Throttling uses a token bucket (a rate and a burst) at account, stage, method and per-client levels; clients over the limit get 429 Too Many Requests.\n- Usage plans with API keys give each client its own rate, burst and quota.\n- Stage caching stores responses for a TTL (300 seconds by default, up to 3,600) per cache key; add the query string or header parameters that change the response to the cache key.\n\nRead more: https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-request-throttling.html",
+    "commonMistakes": [
+      "Relying on stage throttling to stop one client from starving the others.",
+      "Caching without the parameters that change the response in the cache key.",
+      "Treating API keys as authentication; they identify clients for usage plans."
+    ],
+    "tags": ["domain-2", "task-2.1", "domain-4", "task-4.4"]
+  },
+  {
+    "id": "caching",
+    "title": "Caching strategies: ElastiCache and DAX",
+    "body": "- Lazy loading (cache-aside): read the cache, query the database on a miss, then fill the cache; only requested data is cached, but each miss costs extra round trips.\n- Write-through: update the cache whenever the database is written; data isn't stale, but unread data fills the cache.\n- Add a TTL to bound staleness either way.\n- DynamoDB Accelerator (DAX) is an API-compatible in-memory cache for DynamoDB with microsecond reads of eventually consistent data; strongly consistent reads pass through to the table.\n\nRead more: https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Strategies.html",
+    "commonMistakes": [
+      "Scaling up the database for read-heavy hot data instead of caching it.",
+      "Expecting DAX to cache strongly consistent reads.",
+      "Writing cache-aside code for DynamoDB when swapping in the DAX client would do."
+    ],
+    "tags": ["domain-2", "task-2.1", "domain-3", "task-3.3", "domain-4", "task-4.3"]
+  },
+  {
+    "id": "workload-visibility",
+    "title": "Workload visibility: X-Ray and CloudWatch metrics",
+    "body": "- AWS X-Ray traces individual requests across services (API Gateway, Lambda, SDK calls) and shows a trace map with the time spent and the errors in each.\n- CloudWatch metrics and alarms watch aggregates; pick the statistic that matches the business objective, such as p99 latency for a 99th-percentile target.\n- Load balancer metrics such as TargetResponseTime, HTTPCode_Target_5XX_Count and HealthyHostCount describe what users experience.\n\nRead more: https://docs.aws.amazon.com/xray/latest/devguide/aws-xray.html",
+    "commonMistakes": [
+      "Alarming on the Average statistic when the objective is a percentile.",
+      "Alarming on Maximum, which fires on a single outlier.",
+      "Looking in CloudTrail to find which service is slow."
+    ],
+    "tags": ["domain-2", "task-2.2"]
+  },
+  {
+    "id": "s3-performance",
+    "title": "Amazon S3 performance: prefixes, parallelism and Express One Zone",
+    "body": "- Each prefix in a bucket supports at least 3,500 PUT/COPY/POST/DELETE and 5,500 GET/HEAD requests per second, and a bucket can have any number of prefixes, so spreading keys across prefixes scales request rates.\n- Multipart upload sends parts of a large object in parallel and retries only failed parts; byte-range GETs do the same for downloads.\n- S3 Transfer Acceleration routes long-distance transfers to one bucket through CloudFront edge locations.\n- S3 Express One Zone stores objects in a directory bucket in one Availability Zone you choose, for consistent single-digit millisecond access next to your compute.\n\nRead more: https://docs.aws.amazon.com/AmazonS3/latest/userguide/optimizing-performance.html",
+    "commonMistakes": [
+      "Asking for a request-rate quota increase instead of spreading keys over more prefixes.",
+      "Using Transfer Acceleration to fix request-rate or same-Region latency problems; it only helps distance.",
+      "Forgetting that Express One Zone keeps data in a single Availability Zone."
+    ],
+    "tags": ["domain-3", "task-3.1"]
+  },
+  {
+    "id": "file-storage",
+    "title": "Shared file systems: Amazon EFS and the FSx family",
+    "body": "- Amazon EFS: elastic NFS for Linux, mounted from every Availability Zone. Elastic throughput (the default) scales with the workload and bills for what is read and written; Provisioned throughput fixes a rate; Bursting ties throughput to stored size and credits.\n- FSx for Windows File Server: SMB with Active Directory and NTFS permissions.\n- FSx for Lustre: high-performance parallel file system for Linux HPC and ML, linked to S3 through data repository associations.\n- FSx for NetApp ONTAP: the same data over NFS, SMB and iSCSI, with snapshots and automatic tiering to a capacity pool.\n\nRead more: https://docs.aws.amazon.com/decision-guides/latest/decision-guides/choosing-aws-storage-service.html",
+    "commonMistakes": [
+      "Choosing EFS for Windows clients or FSx for Windows File Server for Linux NFS clients.",
+      "Paying for Provisioned throughput on EFS for a spiky workload that Elastic throughput would serve.",
+      "Missing FSx for NetApp ONTAP when one data set needs both NFS and SMB."
+    ],
+    "tags": ["domain-3", "task-3.1", "domain-4", "task-4.1"]
+  },
+  {
+    "id": "ebs-performance",
+    "title": "Amazon EBS volume types and instance storage performance",
+    "body": "- gp3: 3,000 IOPS and 125 MiB/s included at any size; provision more IOPS and throughput independently of capacity. gp2 IOPS grow with volume size.\n- io2 Block Express: the highest IOPS and lowest, most consistent latency, for critical databases.\n- st1 and sc1: HDD for large sequential throughput, not random I/O.\n- An instance can drive no more than its type's EBS-optimized bandwidth and IOPS limit, whatever the volumes provide.\n- Instance store: NVMe disks on the host with very high IOPS at no extra charge, lost when the instance stops or fails, so only for temporary data.\n\nRead more: https://docs.aws.amazon.com/ebs/latest/userguide/ebs-volume-types.html",
+    "commonMistakes": [
+      "Growing a gp2 volume just to get more IOPS instead of moving to gp3.",
+      "Adding volume IOPS when the instance type's EBS limit is the ceiling.",
+      "Putting data that must survive a stop on instance store."
+    ],
+    "tags": ["domain-3", "task-3.1"]
+  },
+  {
+    "id": "hybrid-storage",
+    "title": "Hybrid storage and data transfer: Storage Gateway and DataSync",
+    "body": "- S3 File Gateway: an NFS or SMB share on premises that stores each file as an S3 object, with a local cache of recent data.\n- Volume Gateway: iSCSI block volumes. Cached volumes keep the data in AWS and hot data locally; stored volumes keep all data locally and back it up to AWS as snapshots restorable as EBS volumes.\n- Tape Gateway: virtual tapes for existing backup software.\n- AWS DataSync: an agent-based, scheduled transfer service between on-premises storage (NFS, SMB, HDFS, object) and S3, EFS or FSx, with integrity checks and bandwidth limits.\n\nRead more: https://docs.aws.amazon.com/storagegateway/latest/vgw/WhatIsStorageGateway.html",
+    "commonMistakes": [
+      "Choosing cached volumes when the whole data set must stay available locally.",
+      "Using DataSync for ongoing low-latency file access; it moves data, it is not a share.",
+      "Expecting a Volume Gateway to store files as individual S3 objects."
+    ],
+    "tags": ["domain-3", "task-3.1", "task-3.5", "domain-4", "task-4.1"]
+  },
+  {
+    "id": "ec2-instance-selection",
+    "title": "Choosing EC2 instance types and placement",
+    "body": "- General purpose (M, burstable T), compute optimized (C), memory optimized (R, X), storage optimized (I, D) and accelerated computing (P, G, Inf, Trn) families.\n- Burstable T instances earn CPU credits below a baseline; under sustained high CPU a fixed performance instance costs less than unlimited mode and does not throttle.\n- Placement groups: cluster (low latency, one zone) for tightly coupled HPC, partition for large distributed systems, spread for a few critical instances.\n- Elastic Fabric Adapter adds OS-bypass networking for MPI and ML training.\n\nRead more: https://docs.aws.amazon.com/ec2/latest/instancetypes/instance-types.html",
+    "commonMistakes": [
+      "Keeping a burstable instance for a load that runs above its baseline all day.",
+      "Picking compute optimized instances for memory-bound workloads.",
+      "Using a spread placement group when the goal is low inter-node latency."
+    ],
+    "tags": ["domain-3", "task-3.2"]
+  },
+  {
+    "id": "batch-and-emr",
+    "title": "Batch and big data compute: AWS Batch and Amazon EMR",
+    "body": "- AWS Batch queues containerized jobs and provisions EC2 or Fargate capacity in managed compute environments to run them to completion, then scales back down; array jobs fan out many similar jobs.\n- Amazon EMR runs open-source frameworks such as Apache Spark, Hive and Presto on managed clusters (or EMR Serverless), reading data in S3.\n- Lambda suits short, event-driven work: an invocation stops at 15 minutes.\n\nRead more: https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-what-is-emr.html",
+    "commonMistakes": [
+      "Running long batch jobs as an ECS service, which restarts tasks that exit.",
+      "Picking EMR for independent container jobs that need a scheduler, not Spark.",
+      "Choosing Lambda for jobs that run longer than 15 minutes."
+    ],
+    "tags": ["domain-3", "task-3.2", "task-3.5"]
+  },
+  {
+    "id": "dynamodb-performance",
+    "title": "Amazon DynamoDB capacity, keys and global tables",
+    "body": "- On-demand mode serves traffic as it comes with no capacity planning; provisioned mode (with auto scaling) suits predictable traffic.\n- Each partition delivers up to 3,000 read units and 1,000 write units per second, so the partition key must spread traffic; write sharding adds a random or calculated suffix to a hot key.\n- Query reads one partition key; Scan reads the whole table. Global secondary indexes add other keys and can be created at any time; local secondary indexes share the table's partition key and are defined at creation.\n- Global tables replicate a table to several Regions, each accepting reads and writes.\n\nRead more: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-design.html",
+    "commonMistakes": [
+      "Raising table capacity to fix throttling on one hot partition key.",
+      "Running Scans with filters where a GSI and a Query would do.",
+      "Trying to add a local secondary index to an existing table."
+    ],
+    "tags": ["domain-3", "task-3.3"]
+  },
+  {
+    "id": "database-selection",
+    "title": "Choosing a database type on AWS",
+    "body": "- Relational (Amazon RDS, Aurora): SQL, joins and transactions; Aurora Serverless v2 scales capacity in fine-grained steps for variable load.\n- Key-value (DynamoDB): single-digit millisecond lookups at any scale.\n- In-memory (ElastiCache, MemoryDB): microsecond to sub-millisecond access for caches and fast data.\n- Graph (Neptune): queries that traverse relationships many hops deep.\n- Data warehouse (Redshift): analytical queries over large data sets.\n\nRead more: https://docs.aws.amazon.com/decision-guides/latest/decision-guides/databases-on-aws-how-to-choose.html",
+    "commonMistakes": [
+      "Forcing deep relationship traversals into self-joins instead of a graph database.",
+      "Using a data warehouse for interactive transactional lookups.",
+      "Scaling a relational instance up for workloads that are really key-value lookups."
+    ],
+    "tags": ["domain-3", "task-3.3", "domain-4", "task-4.3"]
+  },
+  {
+    "id": "database-migration",
+    "title": "Database migrations with AWS DMS and schema conversion",
+    "body": "- Homogeneous migrations (same engine) can use native tools or AWS DMS directly.\n- Heterogeneous migrations (for example Oracle to Aurora PostgreSQL) first convert the schema and code objects with DMS Schema Conversion or the AWS Schema Conversion Tool.\n- AWS DMS then copies the data with a full load and keeps the target in sync with change data capture (CDC) until a short cutover.\n- DMS on its own creates only tables and primary keys, not secondary indexes, foreign keys or procedures.\n\nRead more: https://docs.aws.amazon.com/dms/latest/userguide/CHAP_BestPractices.html",
+    "commonMistakes": [
+      "Letting DMS create the target schema in a heterogeneous migration.",
+      "Running only a full load when the source keeps taking writes until cutover.",
+      "Using an engine's native dump tools across different engines."
+    ],
+    "tags": ["domain-3", "task-3.3", "domain-4", "task-4.3"]
+  },
+  {
+    "id": "vpc-design",
+    "title": "VPC design: CIDR blocks, subnet tiers and routing",
+    "body": "- A VPC has a primary IPv4 CIDR block that cannot change; you can associate secondary CIDR blocks to add addresses.\n- A subnet lives in one Availability Zone and its CIDR block cannot be resized after creation.\n- Tiers: public subnets route to an internet gateway (load balancers, NAT gateways); private subnets hold application and database tiers and reach the internet through NAT.\n- Plan non-overlapping ranges up front if networks will ever be peered or joined through a transit gateway.\n\nRead more: https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html",
+    "commonMistakes": [
+      "Planning to resize a subnet or the primary CIDR block in place.",
+      "Reusing the same CIDR block in VPCs that later need to be connected.",
+      "Putting databases in public subnets for convenience."
+    ],
+    "tags": ["domain-3", "task-3.4"]
+  },
+  {
+    "id": "network-topology",
+    "title": "Connecting many networks: Transit Gateway, Direct Connect and PrivateLink",
+    "body": "- AWS Transit Gateway is a Regional hub: VPCs and VPNs attach once and route to each other through its route tables.\n- AWS Direct Connect is a dedicated private connection with consistent performance. A private virtual interface reaches VPCs through virtual private gateways; a transit virtual interface reaches transit gateways through a Direct Connect gateway, across Regions.\n- VPC peering is one-to-one, not transitive, and needs non-overlapping CIDR blocks.\n- AWS PrivateLink exposes a single service to other VPCs through interface endpoints, even with overlapping CIDR blocks.\n\nRead more: https://docs.aws.amazon.com/vpc/latest/tgw/what-is-transit-gateway.html",
+    "commonMistakes": [
+      "Building a peering mesh where a transit gateway would scale.",
+      "Expecting a Direct Connect gateway to route between the VPCs associated with it.",
+      "Using peering or a transit gateway to share one service with networks that overlap."
+    ],
+    "tags": ["domain-3", "task-3.4", "domain-4", "task-4.4"]
+  },
+  {
+    "id": "kinesis-streaming",
+    "title": "Streaming data with Amazon Kinesis Data Streams and Data Firehose",
+    "body": "- Kinesis Data Streams keeps records for replay and lets many consumers read the same stream. In provisioned mode each shard takes 1 MB/s or 1,000 records/s of writes; on-demand mode manages shards for you.\n- Shared-throughput consumers split each shard's 2 MB/s of reads; enhanced fan-out gives each registered consumer its own 2 MB/s per shard with about 70 ms propagation.\n- Lambda reads one batch per shard at a time unless you raise the parallelization factor (up to 10), which still keeps each partition key in order.\n- Amazon Data Firehose buffers and delivers streams to S3, Redshift and other destinations, and can convert JSON records to Parquet or ORC.\n\nRead more: https://docs.aws.amazon.com/streams/latest/dev/introduction.html",
+    "commonMistakes": [
+      "Adding shards to fix consumer read contention that enhanced fan-out solves.",
+      "Raising Lambda reserved concurrency when one batch per shard is the limit.",
+      "Using Firehose where consumers need to replay records or read with low latency."
+    ],
+    "tags": ["domain-3", "task-3.5"]
+  },
+  {
+    "id": "data-lakes",
+    "title": "Data lakes: AWS Glue, Amazon Athena, Lake Formation and Quick Sight",
+    "body": "- AWS Glue: crawlers build the Data Catalog; serverless ETL jobs transform data (for example CSV to Parquet), and job bookmarks process only new data on each run.\n- Amazon Athena: serverless SQL on data in S3; columnar formats and partitions cut the data each query scans.\n- AWS Lake Formation: central permissions on catalog databases, tables and columns, with data filters for row- and cell-level security, enforced by Athena and other engines.\n- Amazon Quick Sight: managed BI dashboards on Athena and other sources.\n\nRead more: https://docs.aws.amazon.com/lake-formation/latest/dg/what-is-lake-formation.html",
+    "commonMistakes": [
+      "Trying to hide columns with S3 bucket policies or IAM catalog policies.",
+      "Leaving data as row-based CSV and unpartitioned when queries read few columns and dates.",
+      "Reprocessing the whole input every run instead of using job bookmarks."
+    ],
+    "tags": ["domain-3", "task-3.5", "domain-4", "task-4.3"]
+  },
+  {
+    "id": "s3-storage-classes",
+    "title": "Lowering Amazon S3 costs: storage classes, lifecycle rules and Requester Pays",
+    "body": "S3 storage classes trade storage price against retrieval fees, latency and resilience.\n\n- S3 Standard: frequent access, no retrieval fee.\n- S3 Intelligent-Tiering: moves each object between access tiers by its own access pattern for a small monitoring charge, with no retrieval fees. Objects under 128 KB are not monitored and stay in the frequent access tier.\n- S3 Standard-IA and S3 One Zone-IA: lower storage price, a per-GB retrieval fee and a 30-day minimum. One Zone-IA keeps data in a single Availability Zone, for data you can re-create.\n- S3 Glacier Instant Retrieval (milliseconds), Flexible Retrieval (minutes to hours) and Deep Archive (within 12 hours): archive classes with 90-day or 180-day minimums.\n- Lifecycle rules transition or expire current and noncurrent versions and abort incomplete multipart uploads. Each transition is a billed request, so tiny objects can cost more to move than they save.\n- Requester Pays makes the requester, not the bucket owner, pay for requests and downloads.\n\nRead more: https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html",
+    "commonMistakes": [
+      "Moving data with unpredictable access to Standard-IA, where every unexpected read pays a retrieval fee.",
+      "Transitioning millions of tiny objects to a Glacier class, where per-object requests and overhead outweigh the savings.",
+      "Forgetting that a versioned bucket keeps billing for noncurrent versions until a lifecycle rule expires them."
+    ],
+    "tags": ["domain-4", "task-4.1"]
+  },
+  {
+    "id": "ec2-purchasing-options",
+    "title": "EC2 purchasing options: Savings Plans, Reserved Instances and Spot",
+    "body": "- On-Demand: pay per second with no commitment, for short, spiky or unpredictable use.\n- Savings Plans: commit to an hourly spend for 1 or 3 years. Compute Savings Plans apply across instance families, Regions, Fargate and Lambda; EC2 Instance Savings Plans give a deeper discount for one family in one Region.\n- Reserved Instances: a discount for a specific instance configuration; Convertible Reserved Instances can be exchanged.\n- Under consolidated billing in AWS Organizations, Reserved Instance and Savings Plans discounts are shared across the organization's accounts by default.\n- Spot Instances: spare capacity at a steep discount, interrupted with a two-minute notice, for fault-tolerant, flexible work. Diversify instance types and zones and use the price-capacity-optimized allocation strategy.\n- Commit only to the steady baseline and cover peaks with On-Demand or Spot.\n\nRead more: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-purchasing-options.html",
+    "commonMistakes": [
+      "Sizing a commitment to peak or average usage, so every hour below it pays for unused commitment.",
+      "Running work that cannot be interrupted on Spot Instances without checkpoints.",
+      "Expecting an EC2 Instance Savings Plan to cover Fargate or Lambda."
+    ],
+    "tags": ["domain-4", "task-4.2"]
+  },
+  {
+    "id": "cost-management-tools",
+    "title": "AWS cost management tools",
+    "body": "- Cost allocation tags: activate user-defined tags in the Billing console to group and filter costs by project, team or environment.\n- AWS Cost Explorer: view, group and forecast costs, filter by service and usage type, and get Savings Plans and Reserved Instance recommendations.\n- AWS Budgets: alerts on actual or forecasted cost and usage, and on Savings Plans and reservation coverage.\n- AWS Cost and Usage Report: the most detailed line-item billing data, delivered to S3 and queried with Athena.\n- AWS Compute Optimizer: right-sizing recommendations from utilization metrics.\n- Consolidated billing in AWS Organizations: one bill, combined usage for volume pricing, and shared discounts.\n\nRead more: https://docs.aws.amazon.com/cost-management/latest/userguide/what-is-costmanagement.html",
+    "commonMistakes": [
+      "Expecting a new tag to show up in Cost Explorer before it is activated as a cost allocation tag.",
+      "Using a CloudWatch billing alarm when the alert must fire on a forecast, before the money is spent.",
+      "Buying commitments before right-sizing, which locks in over-provisioned capacity."
+    ],
+    "tags": ["domain-4", "task-4.1", "task-4.2"]
+  },
+  {
+    "id": "data-transfer-costs",
+    "title": "Data transfer costs: zones, Regions and the internet",
+    "body": "- Data into AWS from the internet is free; data out to the internet is billed per GB, and serving it through CloudFront usually costs less.\n- Traffic between Availability Zones is billed in each direction; traffic within one zone over private IP addresses is free.\n- Traffic between Regions is billed per GB, so process data in the Region where it lives.\n- NAT gateways, transit gateways and interface endpoints add a per-GB processing charge; gateway endpoints for S3 and DynamoDB do not.\n- Cost Explorer grouped by usage type, or the Cost and Usage Report, shows which data transfer costs the most.\n\nRead more: https://docs.aws.amazon.com/cur/latest/userguide/cur-data-transfers-charges.html",
+    "commonMistakes": [
+      "Sending traffic between instances to public or Elastic IP addresses, which is billed even inside a Region.",
+      "Paying NAT gateway processing for S3 or DynamoDB traffic that a gateway endpoint carries free.",
+      "Spreading a chatty, failure-tolerant batch cluster across zones it does not need."
+    ],
+    "tags": ["domain-4", "task-4.4"]
+  },
+  {
+    "id": "nat-gateways",
+    "title": "NAT gateways: cost and placement",
+    "body": "A NAT gateway bills for every hour it exists and every GB it processes.\n\n- Production: a NAT gateway in each Availability Zone, with each zone's private subnets routed to their own, keeps working when a zone fails and avoids cross-zone data transfer.\n- Non-production with little traffic: one shared NAT gateway saves hourly charges where an outage is acceptable.\n- Send S3 and DynamoDB traffic through gateway endpoints instead of the NAT gateway.\n- A NAT instance can cost less for tiny workloads, but you patch, scale and fail it over yourself.\n\nRead more: https://docs.aws.amazon.com/vpc/latest/userguide/nat-gateway-pricing.html",
+    "commonMistakes": [
+      "Routing every zone through one NAT gateway in production, which adds cross-zone charges and a single point of failure.",
+      "Paying NAT processing for S3 traffic that a gateway endpoint carries free.",
+      "Expecting an egress-only internet gateway to carry IPv4 traffic."
+    ],
+    "tags": ["domain-4", "task-4.4"]
+  },
+  {
+    "id": "ebs-cost",
+    "title": "Lowering Amazon EBS cost: volume types and snapshots",
+    "body": "- gp3: the default SSD. A baseline of 3,000 IOPS and 125 MiB/s is included at any size, and more IOPS and throughput are bought separately, so a volume no longer grows just for performance as gp2 did.\n- io2 Block Express: for sustained IOPS beyond gp3 or sub-millisecond latency, at the highest price.\n- st1: low-cost HDD for frequently accessed, large sequential data. sc1: the lowest-cost type, for large sequential data that is rarely accessed.\n- Snapshots are incremental. The snapshot archive tier costs up to 75% less for snapshots kept 90 days or more, and a restore takes up to 72 hours.\n\nRead more: https://docs.aws.amazon.com/ebs/latest/userguide/ebs-volume-types.html",
+    "commonMistakes": [
+      "Over-sizing gp2 volumes to reach an IOPS target that gp3 provisions directly.",
+      "Keeping Provisioned IOPS volumes for workloads gp3 can serve.",
+      "Archiving snapshots that may be needed within hours."
+    ],
+    "tags": ["domain-4", "task-4.1", "task-4.2"]
+  },
+  {
+    "id": "database-cost",
+    "title": "Lowering relational database cost: Amazon RDS and Aurora",
+    "body": "- Reserved DB instances discount steady instances for 1 or 3 years.\n- Aurora Serverless v2 scales capacity in fine steps and can pause at 0 ACUs when idle. Serverless v2 readers can join a cluster with a provisioned writer.\n- Aurora I/O-Optimized has no per-request I/O charge and a higher instance and storage price; it pays off for I/O-heavy clusters.\n- A cache, read replicas or RDS Proxy can avoid scaling the primary up.\n- Automated backups give point-in-time restore within the retention period (up to 35 days).\n- Moving from a commercial engine to Aurora PostgreSQL or MySQL removes license costs; AWS DMS and DMS Schema Conversion do the migration.\n\nRead more: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_WorkingWithReservedDBInstances.html",
+    "commonMistakes": [
+      "Scaling the primary up for read traffic that a cache or replica could serve.",
+      "Paying for provisioned capacity sized for a short daily peak.",
+      "Taking manual snapshots on a tight schedule when automated backups already give point-in-time restore."
+    ],
+    "tags": ["domain-4", "task-4.3"]
+  },
+  {
+    "id": "dynamodb-cost",
+    "title": "Lowering Amazon DynamoDB cost",
+    "body": "- On-demand capacity: pay per request, for unknown or spiky traffic. Provisioned capacity with auto scaling, plus reserved capacity, costs less for steady traffic.\n- An eventually consistent read uses half the read capacity of a strongly consistent read.\n- The Standard-IA table class lowers the storage price for tables where storage dominates cost.\n- Time to Live deletes expired items without consuming write throughput.\n- Global tables bill replicated writes in every Region; a copy kept only for recovery costs less as a cross-Region backup.\n\nRead more: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/capacity-mode.html",
+    "commonMistakes": [
+      "Using strongly consistent reads where the application tolerates data a second old.",
+      "Deleting expired items with scans and batch writes instead of TTL.",
+      "Running a global table only to keep a disaster recovery copy that a backup could provide."
+    ],
+    "tags": ["domain-4", "task-4.3"]
+  },
+  {
+    "id": "compute-right-sizing",
+    "title": "Right-sizing and scaling compute for cost",
+    "body": "- Right-size first: AWS Compute Optimizer recommends types and sizes from utilization. Match the family to the bottleneck: memory optimized (R), compute optimized (C), general purpose (M), burstable (T).\n- Graviton (arm64) instances and Lambda functions give better price performance than x86 for compatible code.\n- Match the service to the work: Lambda for short event-driven tasks (up to 15 minutes), Fargate for containers without servers, EC2 for steady or specialized needs.\n- Lambda bills GB-seconds and CPU grows with memory, so more memory can finish CPU-bound work at the same or lower cost.\n- Stop paying for idle: schedules, hibernation for in-memory state, and Auto Scaling warm pools of stopped instances for slow-starting applications.\n\nRead more: https://docs.aws.amazon.com/compute-optimizer/latest/ug/what-is-compute-optimizer.html",
+    "commonMistakes": [
+      "Moving to a bigger compute optimized instance when the workload is running out of memory.",
+      "Keeping extra instances running for fast scale-out when a warm pool of stopped instances would do.",
+      "Assuming the smallest Lambda memory setting is always the cheapest."
+    ],
+    "tags": ["domain-4", "task-4.2"]
+  }
+]
