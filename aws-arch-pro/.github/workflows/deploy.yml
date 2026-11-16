@@ -1,0 +1,240 @@
+name: Deploy Quizmill Pack
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      SYNC_WORKER_NAME: quizmill-sync
+      D1_DATABASE_NAME: quizmill-sync
+      PAGES_PROJECT_NAME: pack-aws-arch-pro
+      CUSTOM_DOMAIN: aws-arch-pro.quizmill.dev
+      CUSTOM_ZONE: quizmill.dev
+      EXISTING_SYNC_URL: ${{ secrets.QUIZMILL_SYNC_URL || secrets.NEXT_PUBLIC_SYNC_URL || 'https://quizmill-sync.peter-vanhee.workers.dev' }}
+      CONFIGURED_D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID || secrets.CLOUDFLARE_D1_DATABASE_ID }}
+    steps:
+      - name: Checkout pack
+        uses: actions/checkout@v6
+        with:
+          path: pack
+
+      - name: Checkout quizmill engine
+        uses: actions/checkout@v6
+        with:
+          repository: quizmill/quizmill
+          path: engine
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: engine/package-lock.json
+
+      - name: Install engine dependencies
+        working-directory: engine
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
+        run: npm ci
+
+      - name: Validate pack
+        working-directory: engine
+        run: npm run pack:validate ../pack
+
+      - name: Activate pack
+        working-directory: engine
+        run: npm run pack:use ../pack
+
+      - name: Deploy Cloudflare sync backend
+        working-directory: engine/cloudflare
+        run: |
+          set -euo pipefail
+          npx wrangler --version
+
+          if [ -n "${EXISTING_SYNC_URL:-}" ]; then
+            echo "Using existing sync backend from secret."
+            echo "NEXT_PUBLIC_SYNC_URL=$EXISTING_SYNC_URL" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          DB_ID="${CONFIGURED_D1_DATABASE_ID:-}"
+          if [ -z "$DB_ID" ]; then
+            set +e
+            DB_JSON=$(npx wrangler d1 list --json 2>/tmp/d1-list.err)
+            D1_STATUS=$?
+            set -e
+            if [ "$D1_STATUS" -ne 0 ]; then
+              echo "Cloudflare token can deploy Pages, but cannot list/create D1 databases." >&2
+              echo "Grant D1 edit/read permissions to CLOUDFLARE_API_TOKEN, or add one of these repo secrets:" >&2
+              echo "  QUIZMILL_SYNC_URL=https://<existing-sync-worker>.workers.dev" >&2
+              echo "  D1_DATABASE_ID=<existing quizmill-sync D1 database uuid>" >&2
+              cat /tmp/d1-list.err >&2 || true
+              exit 1
+            fi
+            DB_ID=$(printf '%s' "$DB_JSON" | node -e '
+              let s=""; process.stdin.on("data", d => s += d);
+              process.stdin.on("end", () => {
+                const dbs = JSON.parse(s || "[]");
+                const db = dbs.find(d => d.name === process.env.D1_DATABASE_NAME);
+                process.stdout.write(db ? (db.uuid || db.id || "") : "");
+              });
+            ')
+          fi
+
+          if [ -z "$DB_ID" ]; then
+            echo "Creating D1 database $D1_DATABASE_NAME"
+            npx wrangler d1 create "$D1_DATABASE_NAME"
+            DB_ID=$(npx wrangler d1 list --json | node -e '
+              let s=""; process.stdin.on("data", d => s += d);
+              process.stdin.on("end", () => {
+                const dbs = JSON.parse(s || "[]");
+                const db = dbs.find(d => d.name === process.env.D1_DATABASE_NAME);
+                process.stdout.write(db ? (db.uuid || db.id || "") : "");
+              });
+            ')
+          fi
+
+          if [ -z "$DB_ID" ]; then
+            echo "Could not find/create D1 database id" >&2
+            exit 1
+          fi
+
+          node -e '
+            const fs = require("fs");
+            const p = "wrangler.toml";
+            let s = fs.readFileSync(p, "utf8");
+            s = s.replace(/database_name = ".*"/, `database_name = "${process.env.D1_DATABASE_NAME}"`);
+            s = s.replace(/database_id = ".*"/, `database_id = "${process.argv[1]}"`);
+            fs.writeFileSync(p, s);
+          ' "$DB_ID"
+
+          npx wrangler d1 execute "$D1_DATABASE_NAME" --remote --file=schema.sql
+          npx wrangler deploy --name "$SYNC_WORKER_NAME" 2>&1 | tee /tmp/quizmill-sync-deploy.log
+          SYNC_URL=$(grep -Eo 'https://[^ ]+\.workers\.dev' /tmp/quizmill-sync-deploy.log | tail -1)
+          if [ -z "$SYNC_URL" ]; then
+            echo "Could not determine sync worker URL" >&2
+            exit 1
+          fi
+          echo "NEXT_PUBLIC_SYNC_URL=$SYNC_URL" >> "$GITHUB_ENV"
+          echo "Sync backend: $SYNC_URL"
+
+      - name: Build static app
+        working-directory: engine
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
+          # Anonymous funnel beacon (six events, random device id, off switch
+          # in Settings) -> the sync worker's analytics route. Public by design.
+          NEXT_PUBLIC_ANALYTICS_URL: https://sync.quizmill.dev/v1/analytics
+          NEXT_PUBLIC_PRIVACY_URL: https://quizmill.dev/privacy
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages
+        run: |
+          npx wrangler pages project create "$PAGES_PROJECT_NAME" --production-branch main || true
+          npx wrangler pages deploy engine/out --project-name "$PAGES_PROJECT_NAME"
+
+      - name: Configure quizmill.dev custom domain
+        run: |
+          set -euo pipefail
+          api="https://api.cloudflare.com/client/v4"
+          # The repo's CLOUDFLARE_ACCOUNT_ID secret may be empty; Wrangler can
+          # infer it from the token, but direct API calls need it explicitly.
+          CF_ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-70b494550992cda97e893fab035f7e9a}"
+          auth=(-H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json")
+
+          domains=$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/pages/projects/${PAGES_PROJECT_NAME}/domains" "${auth[@]}")
+          has_domain=$(printf '%s' "$domains" | node -e '
+            let s=""; process.stdin.on("data", d => s += d);
+            process.stdin.on("end", () => {
+              const json = JSON.parse(s || "{}");
+              const found = (json.result || []).some(d => d.name === process.env.CUSTOM_DOMAIN);
+              process.stdout.write(found ? "yes" : "no");
+            });
+          ')
+          if [ "$has_domain" != "yes" ]; then
+            body=$(node -e 'process.stdout.write(JSON.stringify({ name: process.env.CUSTOM_DOMAIN }))')
+            response=$(curl -sS "${api}/accounts/${CF_ACCOUNT_ID}/pages/projects/${PAGES_PROJECT_NAME}/domains" "${auth[@]}" --data "$body")
+            ok=$(printf '%s' "$response" | node -e '
+              let s=""; process.stdin.on("data", d => s += d);
+              process.stdin.on("end", () => {
+                const json = JSON.parse(s || "{}");
+                process.stdout.write(json.success ? "yes" : "no");
+              });
+            ')
+            if [ "$ok" != "yes" ]; then
+              printf '%s\n' "$response" | node -e '
+                let s=""; process.stdin.on("data", d => s += d);
+                process.stdin.on("end", () => {
+                  const json = JSON.parse(s || "{}");
+                  console.error((json.errors || []).map(e => e.message || e.code).join("; ") || "Cloudflare custom domain API failed");
+                });
+              '
+              exit 1
+            fi
+          fi
+
+          # If this token can edit DNS, keep the CNAME in place too. Pages may
+          # create/validate it automatically for zones in the same account; this
+          # makes the intent explicit without failing the deploy on DNS-scope gaps.
+          set +e
+          zone_json=$(curl -fsS "${api}/zones?name=${CUSTOM_ZONE}" "${auth[@]}")
+          zone_status=$?
+          set -e
+          if [ "$zone_status" -eq 0 ]; then
+            zone_id=$(printf '%s' "$zone_json" | node -e '
+              let s=""; process.stdin.on("data", d => s += d);
+              process.stdin.on("end", () => {
+                const json = JSON.parse(s || "{}");
+                process.stdout.write(json.result?.[0]?.id || "");
+              });
+            ')
+            if [ -n "$zone_id" ]; then
+              set +e
+              records=$(curl -sS "${api}/zones/${zone_id}/dns_records?name=${CUSTOM_DOMAIN}" "${auth[@]}")
+              records_status=$?
+              set -e
+              if [ "$records_status" -ne 0 ]; then
+                echo "::notice::Could not query DNS records for ${CUSTOM_DOMAIN}; Pages custom domain was still configured."
+              else
+                record_ids=$(printf '%s' "$records" | node -e '
+                  let s=""; process.stdin.on("data", d => s += d);
+                  process.stdin.on("end", () => {
+                    const json = JSON.parse(s || "{}");
+                    process.stdout.write((json.result || []).map(r => r.id).filter(Boolean).join("\n"));
+                  });
+                ')
+                if [ -n "$record_ids" ]; then
+                  printf '%s\n' "$record_ids" | while IFS= read -r record_id; do
+                    [ -z "$record_id" ] && continue
+                    curl -sS -X DELETE "${api}/zones/${zone_id}/dns_records/${record_id}" "${auth[@]}" >/dev/null || true
+                  done
+                fi
+
+                body=$(node -e 'process.stdout.write(JSON.stringify({ type: "CNAME", name: process.env.CUSTOM_DOMAIN, content: `${process.env.PAGES_PROJECT_NAME}.pages.dev`, proxied: false }))')
+                dns_response=$(curl -sS -X POST "${api}/zones/${zone_id}/dns_records" "${auth[@]}" --data "$body")
+                dns_ok=$(printf '%s' "$dns_response" | node -e '
+                  let s=""; process.stdin.on("data", d => s += d);
+                  process.stdin.on("end", () => {
+                    const json = JSON.parse(s || "{}");
+                    process.stdout.write(json.success ? "yes" : "no");
+                  });
+                ')
+                if [ "$dns_ok" != "yes" ]; then
+                  echo "::notice::DNS API did not accept/update ${CUSTOM_DOMAIN}; Pages custom domain was still configured."
+                fi
+              fi
+            fi
+          else
+            echo "::notice::Could not query ${CUSTOM_ZONE} DNS zone with this token; Pages custom domain was still configured."
+          fi
+
+          echo "Custom domain configured: https://${CUSTOM_DOMAIN}/"

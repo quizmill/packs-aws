@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 2,
+  "id": "pack-aws-arch-pro",
+  "title": "AWS Certified Solutions Architect – Professional",
+  "description": "Unofficial hard-mode practice for AWS Certified Solutions Architect – Professional (SAP-C02): multi-account governance, hybrid networking, migrations, DR, security, data, and cost trade-offs.",
+  "homeSubtitle": "Scenario-heavy SAP-C02 architecture drills for the AWS cert most people fear.",
+  "themeColor": "#ff9900",
+  "categories": [
+    {
+      "key": "orgs",
+      "label": "Organizations & governance",
+      "icon": "🏛️",
+      "shortLabel": "Gov",
+      "weight": 0.18
+    },
+    {
+      "key": "networking",
+      "label": "Hybrid networking",
+      "icon": "🌐",
+      "shortLabel": "Net",
+      "weight": 0.18
+    },
+    {
+      "key": "migration",
+      "label": "Migration & modernization",
+      "icon": "🚚",
+      "shortLabel": "Move",
+      "weight": 0.16
+    },
+    {
+      "key": "dr",
+      "label": "Resilience & DR",
+      "icon": "🛟",
+      "shortLabel": "DR",
+      "weight": 0.18
+    },
+    {
+      "key": "security",
+      "label": "Security architecture",
+      "icon": "🔐",
+      "shortLabel": "Sec",
+      "weight": 0.12
+    },
+    {
+      "key": "data",
+      "label": "Data & analytics",
+      "icon": "🗃️",
+      "shortLabel": "Data",
+      "weight": 0.1
+    },
+    {
+      "key": "cost",
+      "label": "Cost optimization",
+      "icon": "💸",
+      "shortLabel": "Cost",
+      "weight": 0.08
+    }
+  ],
+  "levelsLabel": "Mode",
+  "levels": [
+    {
+      "key": "standard",
+      "label": "Standard SAP-C02"
+    },
+    {
+      "key": "extreme",
+      "label": "Extreme hard mode"
+    }
+  ],
+  "exam": {
+    "label": "SAP-C02 readiness",
+    "passPct": 75,
+    "scaled": true,
+    "questionCount": 75,
+    "scope": {
+      "level": "standard"
+    }
+  },
+  "sources": [
+    {
+      "label": "Original",
+      "name": "Original generated scenarios",
+      "blurb": "Original Quizmill scenarios written from the public AWS documentation and the SAP-C02 exam guide, each linked to the doc page it rests on: Organizations/SCP, hybrid networking/DNS, DR, migration, security, data, and cost trade-offs."
+    }
+  ]
+}
