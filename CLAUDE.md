@@ -8,12 +8,15 @@ author.
 - **One directory is one pack**, named after its pack id. A new pack is a
   new directory with `pack.json` and `questions.json`; CI and the deploy
   workflow discover it. Don't add per-pack workflows.
-- **`aws-clf` and `aws-genai` are generated samples.** Never edit the files
-  listed in their `.derived.json`; change the question in
+- **`aws-clf`, `aws-genai` and `aws-aif` are generated samples.** Never edit
+  the files listed in their `.derived.json`; change the question in
   `quizmill/packs-aws-full` and the sample follows on merge. Their
-  `README.md`, `NOTICE.md` and `LICENSE` are edited here.
-- **A pack's own `CLAUDE.md` adds to these rules** (`aws-saa/CLAUDE.md`,
-  `aws-aif/CLAUDE.md`): provenance, id scheme, item-writing style.
+  `README.md`, `NOTICE.md` and `LICENSE` are edited here. A sample has the
+  same pack id and question ids as its full bank (there is no `-full` id),
+  so a learner's progress carries over when the full bank is unlocked.
+- **A pack's own `CLAUDE.md` adds to these rules** (`aws-saa/CLAUDE.md`):
+  provenance, id scheme, item-writing style. `aws-aif/CLAUDE.md` only says
+  what is still edited here; its authoring rules moved with the bank.
 - **Ids are stable.** Learner progress is keyed on question ids and on the
   pack id. Never renumber or reuse a question id, never rename a pack id or
   its directory.
