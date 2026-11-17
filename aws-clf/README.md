@@ -2,16 +2,18 @@
 
 Practice for the **AWS Certified Cloud Practitioner (CLF-C02)** exam
 (65 questions, 90 min, pass 700/1000, scaled). This pack is a
-**30-question sample** of the full bank, `aws-clf-full`: cloud concepts,
+**30-question sample** of the full 79-question bank: cloud concepts,
 security and compliance, core AWS services, and billing, pricing and
 support, across the Easy, Hard and Very hard tiers.
 
 Live at <https://aws-clf.quizmill.dev>.
 
-The app's upgrade card (on Home, and in Settings → Packs) links to the full
-bank, and the manifest names it (`upgrade.packId`, with `upgrade.unlockUrl`
-as the service), so a licence key for `aws-clf-full` unlocks it **in place**
-next to the sample, with progress kept per pack.
+The sample and the full bank are **one pack with one id**, `aws-clf`. The
+app's upgrade card (on Home, and in Settings → Packs) links to the full
+bank, and the manifest names it (`upgrade.packId`, the pack's own id, with
+`upgrade.unlockUrl` as the service), so a licence key unlocks it **in
+place**: the 30 questions become the full bank under the same pack and the
+same question ids, and every answer given in the sample carries over.
 
 > **Unofficial.** Not affiliated with or endorsed by AWS. This is community
 > study material — every question is `reviewStatus: "draft"`; cross-check
