@@ -78,5 +78,13 @@
       "blurb": "Domains, weights and task statements follow the official AWS Certified AI Practitioner (AIF-C01) exam guide.",
       "url": "https://docs.aws.amazon.com/aws-certification/latest/ai-practitioner-01/ai-practitioner-01.html"
     }
-  ]
+  ],
+  "upgrade": {
+    "title": "Get the full bank — 200 questions",
+    "url": "https://admin.quizmill.dev/v1/buy/aws-aif",
+    "price": "$3",
+    "blurb": "This app is a 30-question sample. The full bank has all 200 questions across the same five domains and three tiers, unlocks in place with a licence key under Packs → Have a licence key?, and gets new questions as updates.",
+    "packId": "aws-aif",
+    "unlockUrl": "https://sync.quizmill.dev"
+  }
 }
