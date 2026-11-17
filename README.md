@@ -8,7 +8,7 @@ learning pack, deployed as its own installable practice app.
 | [`aws-clf`](aws-clf) | Cloud Practitioner (CLF-C02) | [aws-clf.quizmill.dev](https://aws-clf.quizmill.dev) | 30-question sample of the paid bank |
 | [`aws-genai`](aws-genai) | Generative AI Developer – Professional (AIP-C01) | [aws-genai.quizmill.dev](https://aws-genai.quizmill.dev) | 30-question sample of the paid bank |
 | [`aws-saa`](aws-saa) | Solutions Architect – Associate (SAA-C03) | | free bank |
-| [`aws-aif`](aws-aif) | AI Practitioner (AIF-C01) | [aws-aif.quizmill.dev](https://aws-aif.quizmill.dev) | free bank |
+| [`aws-aif`](aws-aif) | AI Practitioner (AIF-C01) | [aws-aif.quizmill.dev](https://aws-aif.quizmill.dev) | 30-question sample of the full bank |
 | [`aws-arch-pro`](aws-arch-pro) | Solutions Architect – Professional (SAP-C02) | [aws-arch-pro.quizmill.dev](https://aws-arch-pro.quizmill.dev) | free bank |
 
 These packs are unofficial and not affiliated with or endorsed by AWS. Each
@@ -25,13 +25,17 @@ npx quizmill validate aws-saa   # schema + cross-reference checks
 
 ## Two kinds of pack
 
-- **Free banks** (`aws-saa`, `aws-aif`, `aws-arch-pro`) are edited here.
+- **Free banks** (`aws-saa`, `aws-arch-pro`) are edited here.
   Issues and pull requests are welcome.
-- **Samples** (`aws-clf`, `aws-genai`) are generated. Their `pack.json`,
+- **Samples** (`aws-clf`, `aws-genai`, `aws-aif`) are generated. Their `pack.json`,
   `questions.json`, `concepts.json` and `scenarios.json` are written by CI
   from the paid bank, so a pull request that changes them fails CI. Each
   has a `.derived.json` naming the generated files. Report a problem with a
   sample question as an issue here and it is fixed at the source.
+  A sample and its full bank are one pack with one id and the same question
+  ids: a licence key entered in the app swaps the sample's questions for
+  the full bank in place, and every answer given in the sample carries
+  over.
 
 ## Add a pack
 
@@ -50,3 +54,5 @@ from their directory.
 This repo combines the former `pack-aws-clf`, `pack-aws-genai`,
 `pack-aws-saa`, `pack-aws-aif` and `pack-aws-arch-pro` repos, with their
 commit history kept under each directory (`git log -- aws-saa`).
+`aws-aif` held its whole 200-question bank here until November 2026, when
+it became a generated sample like `aws-clf` and `aws-genai`.
