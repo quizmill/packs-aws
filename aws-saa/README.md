@@ -8,6 +8,8 @@ Design High-Performing Architectures and Design Cost-Optimized
 Architectures), spread over the
 Easy, Hard and Very hard tiers.
 
+Live at <https://aws-saa.quizmill.dev>.
+
 > **Unofficial.** Not affiliated with or endorsed by AWS. This is community
 > study material — every question is `draft`; cross-check against the AWS
 > docs and the official practice set.
@@ -70,15 +72,43 @@ reuses earlier cards where they fit.
   with all 50 keys added to Domain 2, a third with all 50 added to
   Domain 3, and a fourth with all 50 added to Domain 4.
 
+## Quality bar
+
+What the bank has passed so far, over all 260 questions:
+
+- **Validator**: `npx quizmill validate aws-saa` reports a valid pack
+  (schema and cross-references).
+- **Strict lint** (`quizmill/admin` evals, `lint --strict`): 0 errors.
+  9 warnings remain for stems that use a lowercase "not" without marking
+  it, plus 18 informational cues (13 stem echoes, 5 absolute terms).
+- **Blind solve**: each authoring batch was answered without the keys and
+  every key was confirmed (see Known limitations).
+
+The whole-bank quality gate that [`aws-aif`](../aws-aif) passed (blind
+solve, choices-only and rubric review of every item by a judge model) has
+not been run to completion on this bank yet, so no gate result is claimed
+here.
+
 ## Use it
 
+Open <https://aws-saa.quizmill.dev> and install it from the browser like
+any web app, or add it to any quizmill app from the pack library (it is
+listed in the quizmill pack registry as `aws-saa`). From the command line:
+
 ```
-npm run pack:use packs/aws-saa   # after copying this dir into the engine's packs/
-npm run dev                      # http://localhost:3000
+npx quizmill run quizmill/packs-aws/aws-saa   # install + run, http://localhost:3000
 ```
 
-Or point the engine at this directory directly. To deploy as its own app,
-the included `.github/workflows/deploy.yml` builds it onto the quizmill
-engine (static app in `aws-saa-app/`, named after the manifest id) and
-publishes to Cloudflare Pages (project `aws-saa`) once the repo's
-`CLOUDFLARE_*` secrets are set.
+Or from a checkout of this repo:
+
+```
+git clone https://github.com/quizmill/packs-aws && cd packs-aws
+npx quizmill run aws-saa        # http://localhost:3000
+npx quizmill validate aws-saa   # schema + cross-reference checks
+```
+
+The repo's `.github/workflows/deploy.yml` builds the pack onto the
+quizmill engine (static app in `aws-saa-app/`, named after the manifest
+id) and publishes it to Cloudflare Pages (project `aws-saa`, custom domain
+`aws-saa.quizmill.dev`) when the pack changes on `main` and daily.
+`.github/workflows/ci.yml` validates every PR.

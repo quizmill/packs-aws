@@ -7,7 +7,7 @@ learning pack, deployed as its own installable practice app.
 |---|---|---|---|
 | [`aws-clf`](aws-clf) | Cloud Practitioner (CLF-C02) | [aws-clf.quizmill.dev](https://aws-clf.quizmill.dev) | 30-question sample of the paid bank |
 | [`aws-genai`](aws-genai) | Generative AI Developer – Professional (AIP-C01) | [aws-genai.quizmill.dev](https://aws-genai.quizmill.dev) | 30-question sample of the paid bank |
-| [`aws-saa`](aws-saa) | Solutions Architect – Associate (SAA-C03) | | free bank |
+| [`aws-saa`](aws-saa) | Solutions Architect – Associate (SAA-C03) | [aws-saa.quizmill.dev](https://aws-saa.quizmill.dev) | free bank |
 | [`aws-aif`](aws-aif) | AI Practitioner (AIF-C01) | [aws-aif.quizmill.dev](https://aws-aif.quizmill.dev) | 30-question sample of the full bank |
 | [`aws-arch-pro`](aws-arch-pro) | Solutions Architect – Professional (SAP-C02) | [aws-arch-pro.quizmill.dev](https://aws-arch-pro.quizmill.dev) | free bank |
 
