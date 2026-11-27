@@ -10,18 +10,18 @@ exam-style scenarios written for the pack.
 
 The **full bank — 752 questions** in twelve categories and four tiers, 385
 of them an **Exam-level** tier of paired scenario questions written against
-the exam guide's 20 tasks — ships as a separate pack, `aws-genai-full`. The
+the exam guide's 20 tasks — is the same pack under the same id, `aws-genai`:
+the sample and the full bank are one pack with one id. The
 app's upgrade card
 (on Home, below the practice loop, and in Settings → Packs) links to it, and
-the manifest names it (`upgrade.packId`, with `upgrade.unlockUrl` as the
-service) so a licence key for it unlocks the full bank **in place**: paste
-the key under **Packs → Have a licence key?**, or open the `/unlock#key=…`
-link you were sent, and the full bank becomes the active pack next to the
-sample — no file involved, and progress is kept per pack. A key for any
-other pack is refused with the service's own words. The fallback still
-works: insert the full bank's bundle file at `/packs` and tap **Make
-active**. Engines older than the release that added the key entry ignore
-the two fields and show the card alone.
+the manifest names it (`upgrade.packId`, the pack's own id, with
+`upgrade.unlockUrl` as the service) so a licence key unlocks the full bank
+**in place**: paste the key under **Packs → Have a licence key?**, or open
+the `/unlock#key=…` link you were sent, and the 30 questions become the full
+bank under the same pack and the same question ids — no file involved, and
+every answer given in the sample carries over. A key for any other pack is
+refused with the service's own words. Unlocking under the pack's own id
+needs an app built on quizmill 0.4.7 or later.
 
 The timed exam (75 questions, 180 minutes) is in the full bank only.
 

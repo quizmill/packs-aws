@@ -1,18 +1,5 @@
 [
   {
-    "id": "ai-terms",
-    "title": "AI, ML, deep learning and generative AI",
-    "body": "The terms nest inside each other:\n\n- Artificial intelligence (AI): systems that perform tasks that normally need human intelligence.\n- Machine learning (ML): the part of AI where a model learns patterns from data instead of following hand-written rules.\n- Deep learning: ML with neural networks of many layers; it handles unstructured data such as images, audio and text.\n- Generative AI: deep learning models, usually foundation models, that create new content (text, images, code, audio).\n- Agentic AI: systems where a model plans steps and calls tools to reach a goal.\n\nTraining builds a model from data; inference uses the trained model to make predictions on new data.\n\nRead more: https://aws.amazon.com/what-is/deep-learning/",
-    "commonMistakes": [
-      "Treating deep learning and generative AI as synonyms: generative AI is one use of deep learning.",
-      "Calling a rules engine written by experts \"machine learning\": nothing is learned from data."
-    ],
-    "tags": [
-      "domain-1",
-      "task-1.1"
-    ]
-  },
-  {
     "id": "ml-learning-types",
     "title": "Supervised, unsupervised and reinforcement learning",
     "body": "- Supervised learning: every training example has a known answer (label). Used for classification and regression.\n- Unsupervised learning: no labels; the model finds structure, such as clusters or anomalies.\n- Semi-supervised learning: a small labeled set plus a large unlabeled set.\n- Reinforcement learning: an agent takes actions in an environment and learns from rewards and penalties.\n- Self-supervised learning: the data provides its own labels (for example, predicting the next word), which is how foundation models are pre-trained.\n\nRead more: https://aws.amazon.com/compare/the-difference-between-machine-learning-supervised-and-unsupervised/",
@@ -84,71 +71,6 @@
     "commonMistakes": [
       "Using Model Monitor for labeling or Ground Truth for production monitoring.",
       "Expecting endpoint latency metrics to reveal data drift."
-    ],
-    "tags": [
-      "domain-1",
-      "task-1.3"
-    ]
-  },
-  {
-    "id": "ml-metrics",
-    "title": "Model performance metrics",
-    "body": "For classification, from the confusion matrix:\n\n- Accuracy: share of all predictions that are right. Misleading on imbalanced data.\n- Precision: of the items flagged positive, how many really are. Matters when false positives are costly.\n- Recall: of the real positives, how many were found. Matters when missing a case is costly.\n- F1 score: harmonic mean of precision and recall.\n- AUC: how well the model ranks positives above negatives across thresholds.\n\nFor regression: RMSE, MAE, R². Business metrics (cost per user, ROI, customer feedback) judge whether the model is worth it.\n\nRead more: https://docs.aws.amazon.com/sagemaker/latest/dg/autopilot-metrics-validation.html",
-    "commonMistakes": [
-      "Trusting 99% accuracy on a dataset where 99% of records are negative.",
-      "Mixing up precision (false positives) and recall (false negatives)."
-    ],
-    "tags": [
-      "domain-1",
-      "task-1.3"
-    ]
-  },
-  {
-    "id": "ai-data-types",
-    "title": "Types of data in AI models",
-    "body": "- Labeled data carries the answer (the target) for each example and is needed for supervised learning; unlabeled data has no answer and suits unsupervised learning.\n- Structured (tabular) data fits rows and columns: numbers, short text, dates, as in a relational table or spreadsheet.\n- Unstructured data does not fit a table: free text, images, audio and video.\n- Time-series data is a sequence of values ordered by time, such as hourly sensor readings or daily sales, and is used for forecasting.\n- Image data feeds computer vision; text data feeds natural language processing.\n\nRead more: https://aws.amazon.com/compare/the-difference-between-structured-data-and-unstructured-data/",
-    "commonMistakes": [
-      "Calling free-text reviews structured because they are stored in a database column.",
-      "Assuming unlabeled data can train a model to predict a known target."
-    ],
-    "tags": [
-      "domain-1",
-      "task-1.1"
-    ]
-  },
-  {
-    "id": "ai-use-cases",
-    "title": "Real-world AI applications and where they add value",
-    "body": "AI and ML add value by assisting human decisions (ranking claims for review), by scaling a task to volumes people cannot handle, and by automating repetitive work.\n\nCommon applications and an AWS fit:\n\n- Computer vision: Amazon Rekognition; documents: Amazon Textract.\n- NLP: Amazon Comprehend; translation: Amazon Translate.\n- Speech recognition: Amazon Transcribe; speech output: Amazon Polly; chat and voice bots: Amazon Lex.\n- Recommendations: Amazon Personalize.\n- Fraud and anomaly detection, forecasting: models built in Amazon SageMaker AI.\n- Knowledge bases: Amazon Bedrock Knowledge Bases.\n- Agentic AI: agents that plan and call tools, built with Amazon Bedrock and AgentCore.\n\nRead more: https://docs.aws.amazon.com/personalize/latest/dg/what-is-personalize.html",
-    "commonMistakes": [
-      "Using a document search service for personalized recommendations.",
-      "Calling a fixed rule written by people an AI application."
-    ],
-    "tags": [
-      "domain-1",
-      "task-1.2"
-    ]
-  },
-  {
-    "id": "mlops",
-    "title": "MLOps on SageMaker AI",
-    "body": "MLOps applies engineering practice to ML so models reach production and stay healthy:\n\n- Experimentation: managed MLflow on SageMaker AI logs each run's parameters and metrics for comparison.\n- Repeatable processes: SageMaker Pipelines runs data preparation, training, evaluation and registration the same way every time.\n- Versioning and approval: SageMaker Model Registry catalogs model versions and their approval status.\n- Monitoring: SageMaker Model Monitor detects data and model quality drift against a baseline.\n- Re-training: a drift alert can start a pipeline that retrains and registers a new version for approval.\n- Managing technical debt: avoid one-off notebooks and manual steps that nobody can reproduce.\n\nRead more: https://docs.aws.amazon.com/sagemaker/latest/dg/pipelines.html",
-    "commonMistakes": [
-      "Treating Model Registry as an orchestrator: Pipelines runs the steps, the registry stores the versions.",
-      "Retraining on a fixed schedule with no monitoring signal and no approval step."
-    ],
-    "tags": [
-      "domain-1",
-      "task-1.3"
-    ]
-  },
-  {
-    "id": "ai-dev-services",
-    "title": "Where models come from and the AWS tools around them",
-    "body": "Sources of foundation models:\n\n- Managed API: Amazon Bedrock serves provider models without exposing their weights; providers cannot see customer prompts.\n- Open-weight pretrained models: SageMaker JumpStart deploys and fine-tunes them on instances in your own account (self-hosted).\n- Custom models: training from scratch needs very large datasets and compute; most teams start from a pretrained model.\n\nTools for each stage:\n\n- Amazon SageMaker AI: build, train, deploy and monitor ML models.\n- Amazon Bedrock: build generative AI applications and agents on foundation models.\n- Kiro: an AI-powered development environment; specs turn a feature into requirements, design and tasks.\n- Amazon Quick: an AI workspace for business users with dashboards (Quick Sight), research, flows and chat over company data.\n\nRead more: https://docs.aws.amazon.com/quick/latest/userguide/what-is.html",
-    "commonMistakes": [
-      "Expecting to download the weights of a model used through Bedrock.",
-      "Mixing up Kiro (for developers) and Amazon Quick (for business users)."
     ],
     "tags": [
       "domain-1",
@@ -364,19 +286,6 @@
     ]
   },
   {
-    "id": "transparency-explainability",
-    "title": "Transparent and explainable models",
-    "body": "- Transparent (interpretable) models, such as linear models and decision trees, show how they reach a decision.\n- Black-box models, such as deep neural networks, need post-hoc explanation (for example, SHAP feature attributions from SageMaker Clarify).\n- Trade-off: more complex models are often more accurate but harder to explain.\n\nDocumentation supports transparency: Amazon SageMaker Model Cards record intended use, risk rating, training details and evaluation results. Human-centered design gives users clear reasons and a way to give feedback.\n\nRead more: https://docs.aws.amazon.com/sagemaker/latest/dg/model-cards.html",
-    "commonMistakes": [
-      "Equating high accuracy with transparency.",
-      "Using Model Registry (versions and approvals) as the documentation record."
-    ],
-    "tags": [
-      "domain-4",
-      "task-4.2"
-    ]
-  },
-  {
     "id": "shared-responsibility-ai",
     "title": "Shared responsibility and data protection for AI",
     "body": "AWS secures the cloud: facilities, hardware and the infrastructure behind services like Amazon Bedrock. The customer secures what it does in the cloud: IAM permissions, the data it sends and stores, encryption settings, network design and how the application uses model output.\n\nAmazon Bedrock does not use customer prompts and responses to improve base models and does not share them with model providers. Data is encrypted in transit and at rest, optionally with customer managed AWS KMS keys.\n\nRead more: https://docs.aws.amazon.com/bedrock/latest/userguide/security.html",
@@ -429,58 +338,6 @@
     ]
   },
   {
-    "id": "genai-scoping-matrix",
-    "title": "Generative AI Security Scoping Matrix",
-    "body": "A framework that sorts generative AI uses by how much of the stack you own, which sets your security responsibilities:\n\n- Scope 1, consumer app: using a public generative AI service.\n- Scope 2, enterprise app: using a third-party business application with generative AI features.\n- Scope 3, pre-trained models: building your own application on an existing foundation model (for example, through the Amazon Bedrock API, with or without RAG).\n- Scope 4, fine-tuned models: fine-tuning an existing model with your data.\n- Scope 5, self-trained models: training your own model from scratch.\n\nRead more: https://aws.amazon.com/ai/security/generative-ai-scoping-matrix/",
-    "commonMistakes": [
-      "Placing a RAG application in Scope 4: retrieval does not change the model.",
-      "Placing your own application built on Bedrock in Scope 2."
-    ],
-    "tags": [
-      "domain-5",
-      "task-5.2"
-    ]
-  },
-  {
-    "id": "agent-security",
-    "title": "Securing AI agents: AgentCore Identity and Policy",
-    "body": "Agents act on their own and call tools, so they need limits that hold even when a prompt tries to talk them out of it.\n\n- AgentCore Identity: identities and credentials for agents, including OAuth access to third-party services on a user's behalf.\n- Policy in AgentCore: policy engines attached to AgentCore Gateway that check every tool call against deterministic rules, written in Cedar or in natural language, before it runs. Rules can use the user's identity and the tool's input parameters, such as a refund amount.\n- Least-privilege IAM roles for the agent's runtime.\n\nControls outside the agent's code cannot be bypassed by a manipulated prompt; instructions in the system prompt can.\n\nRead more: https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/policy.html",
-    "commonMistakes": [
-      "Relying on system prompt instructions to enforce business rules on tool calls.",
-      "Expecting AgentCore Identity to decide which tool calls are allowed: Identity supplies credentials, Policy decides."
-    ],
-    "tags": [
-      "domain-5",
-      "task-5.1"
-    ]
-  },
-  {
-    "id": "secure-data-engineering",
-    "title": "Secure data engineering for AI",
-    "body": "- Data quality: test data against rules before training, for example with AWS Glue Data Quality rules written in DQDL.\n- Privacy-enhancing technologies: analyze data without exposing individuals. AWS Clean Rooms lets companies work on combined data without sharing raw records, and its differential privacy adds calibrated noise to query results.\n- Data access control: least-privilege access to datasets and, in RAG, metadata filters so that a query retrieves only documents the user may see.\n- Data integrity: encryption, versioning and logs of who changed what.\n\nRead more: https://docs.aws.amazon.com/glue/latest/dg/glue-data-quality.html",
-    "commonMistakes": [
-      "Relying on a system prompt to keep restricted documents from some users: filter them out at retrieval.",
-      "Using SageMaker Model Monitor to check data before training: it watches a deployed endpoint."
-    ],
-    "tags": [
-      "domain-5",
-      "task-5.1"
-    ]
-  },
-  {
-    "id": "grounding-citations",
-    "title": "Source citations, grounding and hallucination checks",
-    "body": "- RAG grounding: retrieve relevant documents and pass them to the model, so answers rest on the company's data rather than on what the model memorized.\n- Source citations: Amazon Bedrock Knowledge Bases return citations with RetrieveAndGenerate responses, so users can check an answer against its source.\n- Output validation: Amazon Bedrock Guardrails contextual grounding checks flag responses that the sources do not support or that miss the question; Automated Reasoning checks test answers against formal rules.\n- Confidence scoring: send low-confidence outputs to human review.\n\nRead more: https://docs.aws.amazon.com/bedrock/latest/userguide/kb-test-retrieve-generate.html",
-    "commonMistakes": [
-      "Treating model invocation logging as a way for users to verify answers: it is an audit record.",
-      "Lowering temperature to stop hallucinations: it makes output less varied, not grounded."
-    ],
-    "tags": [
-      "domain-5",
-      "task-5.1"
-    ]
-  },
-  {
     "id": "fm-lifecycle",
     "title": "The foundation model lifecycle",
     "body": "A foundation model moves through these stages:\n\n- Data selection: gather and curate the data for pre-training (model builder) or customization (you).\n- Model selection: pick a model by task, modality, quality on your tests, cost, latency and compliance.\n- Pre-training: the provider trains the model on very large unlabeled datasets; this is rarely repeated by a user.\n- Fine-tuning or other customization: adapt the model to your task with your own data.\n- Evaluation: test against representative cases and success criteria before release.\n- Deployment: serve the model, for example on demand in Amazon Bedrock or on a SageMaker AI endpoint.\n- Feedback: production ratings and errors drive the next round of prompt, data or tuning changes, then re-evaluation.\n\nRead more: https://docs.aws.amazon.com/wellarchitected/latest/generative-ai-lens/generative-ai-lifecycle.html",
@@ -491,71 +348,6 @@
     "tags": [
       "domain-2",
       "task-2.1"
-    ]
-  },
-  {
-    "id": "context-engineering",
-    "title": "Context engineering",
-    "body": "Context engineering is choosing and shaping everything a model sees in one request, within its context window: system instructions, retrieved passages, memory, tool definitions and results, and conversation history.\n\n- Models are stateless: a chat app re-sends history as input tokens, so cost and latency grow every turn.\n- Keep history in budget: a sliding window drops old turns; summarizing keeps their key facts in fewer tokens.\n- Retrieve only relevant chunks rather than whole documents.\n- Store durable facts, such as user preferences, in long-term memory and inject only the relevant ones.\n- Put static content first and changing content last, so prompt caching can reuse the prefix.\n\nRead more: https://strandsagents.com/latest/documentation/docs/user-guide/concepts/agents/conversation-management/",
-    "commonMistakes": [
-      "Raising maximum output tokens to fit a long history: it caps the reply, not the input.",
-      "Putting a timestamp or the user question at the start of a prompt and expecting cache hits."
-    ],
-    "tags": [
-      "domain-2",
-      "task-2.1"
-    ]
-  },
-  {
-    "id": "multi-agent-patterns",
-    "title": "Multi-agent patterns and protocols",
-    "body": "When one agent has too many tools or roles, split the work:\n\n- Supervisor (agents as tools): a supervisor routes each request to specialist agents with narrow roles and small toolsets. Amazon Bedrock multi-agent collaboration works this way.\n- Swarm: specialist agents hand tasks to each other; the path is emergent.\n- Graph: a flowchart of agents where a model decision at each node picks the next step, with branches and loops.\n- Workflow: a fixed, developer-defined task graph, with independent steps in parallel; the same sequence every run.\n\nProtocols: MCP connects an agent to tools and data sources. Agent2Agent (A2A) lets independent agents, often run by different teams, exchange tasks and results.\n\nRead more: https://strandsagents.com/latest/documentation/docs/user-guide/concepts/multi-agent/multi-agent-patterns/",
-    "commonMistakes": [
-      "Choosing a swarm for a process auditors need to see run identically each time.",
-      "Using MCP to describe agent-to-agent delegation: that is A2A."
-    ],
-    "tags": [
-      "domain-2",
-      "task-2.1"
-    ]
-  },
-  {
-    "id": "agentcore-services",
-    "title": "Amazon Bedrock AgentCore services",
-    "body": "AgentCore runs agents built with any framework (Strands Agents, LangGraph, CrewAI and others) and any model, with no infrastructure to manage. Its modular services:\n\n- Runtime: serverless hosting for agents and tools, with session isolation.\n- Memory: short-term memory for turns within a session; long-term memory for facts and preferences across sessions.\n- Gateway: turns APIs and Lambda functions into MCP tools, and connects existing MCP servers.\n- Identity: agent identities and credentials, including OAuth access to other services on a user's behalf.\n- Code Interpreter and Browser: sandboxed tools to run code and use websites.\n- Observability: traces, metrics and logs of agent behavior.\n\nRead more: https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/what-is-bedrock-agentcore.html",
-    "commonMistakes": [
-      "Expecting short-term memory to remember a user in a new session weeks later.",
-      "Rebuilding a working LangGraph or Strands agent as a Bedrock agent just to host it: Runtime hosts it as is."
-    ],
-    "tags": [
-      "domain-2",
-      "task-2.3"
-    ]
-  },
-  {
-    "id": "genai-builder-tools",
-    "title": "Amazon Quick, Kiro, Strands Agents and PartyRock",
-    "body": "- Amazon Quick: a fully managed AI workspace for business users. Chat agents answer from connected data (Quick Index), Quick Research writes cited reports, Quick Sight covers dashboards, and Quick Flows and Quick Automate automate tasks. It evolved from Amazon QuickSight.\n- Kiro: an AI development environment (IDE, CLI, web). Specs turn an idea into requirements, design and tasks; steering files hold project conventions; hooks automate actions.\n- Strands Agents: an open-source SDK, first released by AWS, for writing agents in a few lines with a model-first agent loop; supports Amazon Bedrock and other providers, MCP and multi-agent patterns.\n- PartyRock: a no-code generative AI playground for learning and building small apps in the browser.\n\nRead more: https://docs.aws.amazon.com/quick/latest/userguide/what-is.html",
-    "commonMistakes": [
-      "Picking AgentCore when business users want a ready-made assistant: AgentCore is for developers running their own agents.",
-      "Calling Strands Agents a hosting service: it is the SDK; AgentCore Runtime can host what you build with it."
-    ],
-    "tags": [
-      "domain-2",
-      "task-2.3"
-    ]
-  },
-  {
-    "id": "bedrock-service-tiers",
-    "title": "Amazon Bedrock service tiers and cost levers",
-    "body": "On-demand requests can choose a service tier with the service_tier parameter:\n\n- Standard (default): consistent performance for everyday tasks.\n- Priority: fastest responses, served ahead of other tiers, for a premium; no reservation.\n- Flex: a discount for workloads that tolerate longer processing, such as evaluations and summarization.\n- Reserved: tokens-per-minute capacity reserved for 1 or 3 months, billed monthly, for mission-critical traffic; overflow goes to Standard.\n\nOther levers: batch inference for asynchronous jobs, Provisioned Throughput for model units by the hour, intelligent prompt routing between models in a family, distillation to a smaller model, and Custom Model Import to serve your own weights on demand.\n\nRead more: https://docs.aws.amazon.com/bedrock/latest/userguide/service-tiers-inference.html",
-    "commonMistakes": [
-      "Choosing Flex for a latency-sensitive app: Flex trades speed for price.",
-      "Reserving capacity around the clock for traffic that peaks only a few hours a day."
-    ],
-    "tags": [
-      "domain-2",
-      "task-2.3"
     ]
   },
   {
@@ -595,84 +387,6 @@
     "tags": [
       "domain-3",
       "task-3.1"
-    ]
-  },
-  {
-    "id": "prompt-management",
-    "title": "Prompt templates and versions in Amazon Bedrock Prompt Management",
-    "body": "Prompt Management stores prompts with their model and inference settings so teams can share and reuse them.\n\n- Variables turn a stored prompt into a reusable template that the application fills in at run time.\n- While testing, compare variants of a prompt and keep the one with the best output.\n- Saving edits updates the working draft.\n- Creating a version takes a snapshot of the prompt. Applications call a specific version, so draft edits reach production only after a new version is created and the application points at it.\n- To roll back, point the application at an earlier version.\n\nRead more: https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-management-deploy.html",
-    "commonMistakes": [
-      "Expecting a draft edit to change what production returns: production calls a saved version.",
-      "Using a model registry to version prompts: it versions models."
-    ],
-    "tags": [
-      "domain-3",
-      "task-3.2"
-    ]
-  },
-  {
-    "id": "fine-tuning-data",
-    "title": "Preparing data to fine-tune a foundation model",
-    "body": "- Format: in Amazon Bedrock, training and validation sets are .jsonl files; for supervised fine-tuning each record pairs a prompt with its expected completion.\n- Curation: quality beats volume. Remove duplicates, errors and off-task examples.\n- Governance: detect and redact personal data (for example with Amazon Comprehend) and confirm the right to use the data before training.\n- Representativeness: cover every kind of input, user group and market the model will serve.\n- Size and validation: hold out a validation set. Training loss falling while validation loss rises means overfitting.\n- Labels: supervised and instruction fine-tuning need labeled pairs; RLHF uses human preferences between responses to train a reward model; reinforcement fine-tuning uses reward functions instead of labels.\n\nRead more: https://docs.aws.amazon.com/bedrock/latest/userguide/model-customization-prepare.html",
-    "commonMistakes": [
-      "Encrypting a dataset and calling it governed: the model still trains on the personal data inside.",
-      "Reading falling training loss alone as success: check validation loss for overfitting."
-    ],
-    "tags": [
-      "domain-3",
-      "task-3.3"
-    ]
-  },
-  {
-    "id": "genai-app-evaluation",
-    "title": "Evaluating GenAI applications and their business value",
-    "body": "Evaluate the whole application, not only the model:\n\n- RAG: Amazon Bedrock RAG evaluations run retrieve-only jobs (are the right passages returned?) or retrieve-and-generate jobs (are the answers good too?).\n- Agents: score the trajectory as well as the reply. Amazon Bedrock AgentCore Evaluations scores agent traces for goal attainment and tool use with LLM-as-a-judge evaluators.\n- Custom rules: a judge-model evaluation job with a custom metric scores business-specific criteria without reference answers.\n- Business alignment: task completion rate, user satisfaction, cost per interaction, time saved (productivity) and user engagement.\n\nRead more: https://docs.aws.amazon.com/bedrock/latest/userguide/evaluation-kb.html",
-    "commonMistakes": [
-      "Judging an agent on its final text alone: wrong tool calls can hide behind a plausible reply.",
-      "Reporting ROUGE or perplexity when leadership asks about business value."
-    ],
-    "tags": [
-      "domain-3",
-      "task-3.4"
-    ]
-  },
-  {
-    "id": "responsible-ai-dimensions",
-    "title": "The dimensions of responsible AI",
-    "body": "AWS describes responsible AI through these dimensions:\n\n- Fairness: considering impacts on different groups of stakeholders.\n- Explainability: understanding and evaluating system outputs.\n- Privacy and security: appropriately obtaining, using and protecting data and models.\n- Safety: preventing harmful system output and misuse.\n- Controllability: having mechanisms to monitor and steer AI system behavior.\n- Veracity and robustness: achieving correct system outputs, even with unexpected or adversarial inputs.\n- Governance: incorporating best practices into the AI supply chain, including providers and deployers.\n- Transparency: enabling stakeholders to make informed choices about their engagement with an AI system.\n\nInclusivity sits close to fairness: the system and its data should serve every group of users it is meant for.\n\nRead more: https://aws.amazon.com/ai/responsible-ai/",
-    "commonMistakes": [
-      "Filing wrong answers on typos or odd phrasing under fairness: correct output on unexpected input is veracity and robustness.",
-      "Confusing transparency (informing stakeholders about the system) with explainability (understanding a given output)."
-    ],
-    "tags": [
-      "domain-4",
-      "task-4.1"
-    ]
-  },
-  {
-    "id": "human-centered-xai",
-    "title": "Human-centered design for explainable AI",
-    "body": "Explanations are built for the people who receive the decision, not only for the model's builders:\n\n- AI decision transparency: tell users when AI is involved and show the main factors behind a decision, in language they can follow, with a confidence level where it helps.\n- Guidance on trust: help users see when to rely on an output, when to verify it and when to override it.\n- User-feedback mechanisms: let users rate, report or challenge an output, and feed what they report back into improving the system.\n- Recourse: give people affected by a decision a way to contest it and reach a human reviewer.\n\nRead more: https://docs.aws.amazon.com/wellarchitected/latest/responsible-ai-lens/raiuc04-bp01.html",
-    "commonMistakes": [
-      "Treating an overall accuracy figure as an explanation of one person's decision.",
-      "Publishing model weights or code to end users and calling that explainable."
-    ],
-    "tags": [
-      "domain-4",
-      "task-4.2"
-    ]
-  },
-  {
-    "id": "model-transparency-docs",
-    "title": "AI Service Cards, open models and licenses",
-    "body": "Where to find out how a model was built and what it is for:\n\n- AWS AI Service Cards: AWS's own documentation of an AWS AI service's intended use cases and limitations, responsible AI design choices and performance best practices.\n- Amazon SageMaker Model Cards: your documentation of the models you build.\n- Open-weight models: the weights and architecture can be inspected, which helps audits, but the training data may be only partly described.\n- Licenses: models in Amazon SageMaker JumpStart come under licenses chosen by their providers (for example Apache 2.0 or Responsible AI Licenses), and some require accepting an end-user license agreement. Review the terms before you build a product on a model.\n\nRead more: https://docs.aws.amazon.com/sagemaker/latest/dg/jumpstart-foundation-models-choose.html",
-    "commonMistakes": [
-      "Assuming publicly available weights allow any commercial use.",
-      "Looking in SageMaker Model Cards for AWS's documentation of its managed AI services."
-    ],
-    "tags": [
-      "domain-4",
-      "task-4.2"
     ]
   }
 ]

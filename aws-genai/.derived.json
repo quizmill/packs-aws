@@ -1,6 +1,6 @@
 {
   "note": "Generated from the private full bank. Do not edit the listed files here; changes are overwritten.",
-  "source": "quizmill/packs-aws-full/aws-genai-full",
+  "source": "quizmill/packs-aws-full/aws-genai",
   "files": [
     "pack.json",
     "questions.json",

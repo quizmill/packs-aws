@@ -1,64 +1,48 @@
-# aws-aif — authoring rules
+# aws-aif — a generated sample
 
-A quizmill content pack for the AWS Certified AI Practitioner (AIF-C01)
-exam. Public repo: write commit messages, PR bodies and comments in terms
-of what a change does for a learner or pack author.
+The 30-question sample of the AWS Certified AI Practitioner (AIF-C01)
+bank. Public repo: write commit messages, PR bodies and comments in terms
+of what a change does for a learner or pack author. The root `CLAUDE.md`
+applies; this file adds what is specific to this directory.
 
-## Files
+## What is edited here, and what is not
 
-- `pack.json` — manifest (schema v2). `categories` are the five exam
-  domains with the exam guide's weights; `exam` holds the guide's numbers.
-  Both are cited in `NOTICE.md` — change one, update the other.
-- `questions.json` — the bank. `scenarios.json` is `[]` until a shared stem
-  is needed.
-- `concepts.json` — concept cards, linked from questions by `conceptId`.
-- `.github/workflows/ci.yml` — validates every PR and push.
-- `.github/workflows/deploy.yml` — calls the engine's reusable
-  `deploy-pack.yml`; deploys on push to `main` only.
+- **Generated, never edited here:** `pack.json`, `questions.json`,
+  `concepts.json`, `scenarios.json` and `.derived.json`. CI writes them
+  from the full bank in `quizmill/packs-aws-full` (directory `aws-aif`),
+  and a PR that changes one of them fails CI.
+- **Edited here:** `README.md`, `NOTICE.md`, `LICENSE` and this file.
+- **A fix to a question or concept card** — wording, key, distractor,
+  explanation, `sourceRef` — is made in the full bank and arrives here on
+  merge. So is a change to which 30 questions are in the sample, and to
+  the manifest (categories, exam numbers, the upgrade card). The authoring
+  rules (provenance, item-writing style, the quality checks) live in the
+  full bank's `aws-aif/CLAUDE.md`.
+- New questions go to the full bank only.
 
-## Content rules
+## Ids
 
-- **Every question is original**, written from the public AWS docs and the
-  official exam guide. No imports from community banks, AWS official
-  practice questions or pretests, or exam dumps — not even "adapted".
-  Community posts may steer *coverage* (which topics, which traps), never
-  the wording of an item.
-- Every question has `source: "original"`, `reviewStatus: "draft"`, and a
-  `sourceRef` to the AWS doc page it rests on. The explanation ends with
-  `Read more: <url>` pointing at a page that supports the claim. Check the
-  URL returns 200 before committing.
-- Ids are `aws-aif-<tier>-d<domain>-<n>` (`n` runs per domain across
-  tiers); tags are `aif-c01`, `domain-<n>` and `task-<n.n>` (the guide's
-  task statement). The tier lives in `level`, not in `tags`. Never reuse or
-  renumber an id: learner progress is keyed on it.
-- Practitioner style: a short situation, then the question; four options
-  (five for "Select TWO"), one best answer. Multi-answer stems say
-  "(Select TWO.)" and use `correctKeys`. Negative stems capitalise NOT /
-  EXCEPT; avoid a lowercase "not" in a scenario's constraints.
-- **Distractors must be plausible**: a real AWS service or feature that
-  fits a neighbouring use case, or a near-miss that meets every constraint
-  but one. No joke options, no "all of the above", no distractor that
-  announces its own defect, and no absolute words ("always", "never",
-  "only") that give a distractor away.
-- **No length cue**: the key is no longer than 1.25× the longest distractor.
-- Every distractor carries a one-sentence `explanation` (≤ 300 characters)
-  saying why it fails; keyed options carry none. The question
-  `explanation` gives the reasoning for the key and why the tempting
-  distractors fail.
-- The exam guide is revised often and names new services (Amazon Bedrock
-  AgentCore, Kiro, Amazon Quick, MCP). Check the current domain pages
-  before writing an item on a newly listed service, and don't rely on older
-  study material.
-- Keep the domain mix close to the blueprint weights (20/24/28/14/14) as
-  the bank grows.
+- The sample and the full bank are one pack: both have the pack id
+  `aws-aif`, and the sample's question ids are the bank's own
+  (`aws-aif-<tier>-d<domain>-<n>`). Learner progress is keyed on both, so
+  answers given in the sample are still there once the full bank is
+  unlocked. Never rename the directory.
+- This directory held all 200 questions until November 2026. Learners from
+  then have answers stored against ids the sample no longer shows; they
+  reappear on unlock. Don't describe those ids as removed.
+
+## Keep the README true
+
+`README.md` quotes numbers that come from the generated files: 30
+questions, 30 concept cards, the per-domain and per-tier table, the count
+of "Select TWO" items, the task statements covered, and the full bank's
+size (from `upgrade.title` in `pack.json`). When a regenerated sample
+changes them, update the README in a PR of its own.
 
 ## Before a PR
 
-- Validator green, run from the engine on Node 22:
-  `mise exec node@22 -- npx --yes quizmill@latest validate .`
-  (or `npm run pack:validate -- <path>` in a `quizmill/quizmill` checkout).
+- Validator green, on Node 22, from the repo root:
+  `mise exec node@22 -- npx --yes quizmill@latest validate aws-aif`.
   Quote its output in the PR.
-- `quizmill/admin` evals lint clean of errors:
-  `node src/lint.ts <this-dir> --strict` from `evals/`.
 - **No screenshots, PNGs, build output or other generated files** in this
   repo. Describe how the engine renders a change in a sentence instead.
